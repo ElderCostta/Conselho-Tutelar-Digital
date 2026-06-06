@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Background (rounded white rect for PWA launcher look) -->
+  <rect width="512" height="512" rx="112" fill="#ffffff" />
+  
+  <g transform="translate(0, -10)">
+    <!-- Protective Blue Upper Hand / Roof -->
+    <path d="M 170,110 C 220,70 292,70 342,110 C 358,122.8 358,143.5 342,152 C 326,160 216,160 170,160 C 154,160 154,122.8 170,110 Z" fill="#0056b3" />
+    <path d="M 230,85 C 280,85 350,110 360,115 C 370,120 370,128 350,128 C 330,128 260,113 234,113 C 215,113 215,85 230,85 Z" fill="#004094" opacity="0.15" />
+    <path d="M 252,50 C 190,50 180,85 252,85 C 324,85 330,50 252,50 Z" fill="#0056b3" opacity="0.1" />
+
+    <!-- Three Protected Figures (Red child, Green adult, Yellow child) -->
+    <!-- GREEN ADULT (Middle) -->
+    <!-- Head -->
+    <circle cx="256" cy="180" r="21" fill="#00a757" />
+    <!-- Body & Legs -->
+    <path d="M 256,204 L 256,260 L 235,325 C 232,333 241,339 248,335 L 256,310 L 264,335 C 271,339 280,333 277,325 L 256,260" fill="#00a757" stroke="#00a757" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" />
+    <!-- Arms -->
+    <path d="M 206,242 C 222,215 240,210 256,210 C 272,210 290,215 306,242" fill="none" stroke="#00a757" stroke-width="12" stroke-linecap="round" />
+
+    <!-- RED CHILD (Left) -->
+    <!-- Head -->
+    <circle cx="185" cy="230" r="16" fill="#e41b13" />
+    <!-- Body & Legs -->
+    <path d="M 185,248 L 185,285 L 172,325 C 170,331 178,335 183,332 L 187,310 L 191,332 C 196,335 204,331 202,325 L 189,285" fill="#e41b13" stroke="#e41b13" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" />
+    <!-- Arms -->
+    <path d="M 148,274 C 160,265 174,250 185,254" fill="none" stroke="#e41b13" stroke-width="10" stroke-linecap="round" />
+    <path d="M 185,254 C 190,253 198,251 206,242" fill="none" stroke="#e41b13" stroke-width="10" stroke-linecap="round" />
+
+    <!-- YELLOW CHILD (Right) -->
+    <!-- Head -->
+    <circle cx="327" cy="216" r="16" fill="#fdb813" />
+    <!-- Body, Arms & Legs (Playful, one leg kicked out) -->
+    <path d="M 327,234 L 327,272 L 316,325 C 314,331 322,335 327,332 L 331,310 L 348,328 C 353,333 361,327 356,321 L 340,272" fill="#fdb813" stroke="#fdb813" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" />
+    <!-- Arms -->
+    <path d="M 306,242 C 314,244 322,238 327,238 C 334,238 348,252 360,248" fill="none" stroke="#fdb813" stroke-width="10" stroke-linecap="round" />
+
+    <!-- Protective Blue Lower Hand / Base -->
+    <path d="M 342,350 C 292,390 220,390 170,350 C 154,337.2 154,316.5 170,308 C 186,300 296,300 342,300 C 358,300 358,337.2 342,350 Z" fill="#0056b3" />
+    <!-- Lower Hand overlap / fingers look -->
+    <path d="M 170,350 L 320,350 C 330,350 330,366 320,366 L 220,366 C 210,366 210,378 220,378 L 325,378 C 345,378 355,364 342,350" fill="#0056b3" />
+  </g>
+
+  <!-- Typography underneath, mimicking the visual logo (Centered, bold and clean) -->
+  <text x="256" y="440" font-family="'Inter', system-ui, -apple-system, sans-serif" font-size="34" font-weight="900" text-anchor="middle" fill="#0056b3" letter-spacing="1">CONSELHO</text>
+  <text x="256" y="482" font-family="'Inter', system-ui, -apple-system, sans-serif" font-size="32" font-weight="900" text-anchor="middle" fill="#0056b3" letter-spacing="1.5">TUTELAR</text>
+</svg>

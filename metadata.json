@@ -1,0 +1,6 @@
+{
+  "name": "Conselho Tutelar de Currais Novos",
+  "description": "Sistema profissional para gestão de atendimentos, registros de ocorrências, acompanhamento de medidas aplicadas e relatórios estatísticos do Conselho Tutelar de Currais Novos / RN.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
