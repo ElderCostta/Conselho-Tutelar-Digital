@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { AtendimentoCase, StatusCase, FollowUpLog, TIPOS_OCORRENCIA } from "./types";
 import { MOCK_CASES } from "./mockData";
 import Dashboard from "./components/Dashboard";
@@ -29,7 +30,15 @@ import {
   Smartphone,
   Laptop,
   Share2,
-  HelpCircle
+  HelpCircle,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Check,
+  Copy,
+  AlertCircle,
+  Terminal,
+  ExternalLink
 } from "lucide-react";
 
 export default function App() {
@@ -39,12 +48,39 @@ export default function App() {
   const [editingCase, setEditingCase] = useState<AtendimentoCase | null>(null);
   const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup">("casos");
 
+  // Estado global para modo de privacidade (Esconder dados confidenciais na tela de terceiros)
+  const [privacyMode, setPrivacyMode] = useState<boolean>(() => {
+    return localStorage.getItem("conselho_tutelar_privacy_mode") === "true";
+  });
+
+  // Função para mascarar dados de crianças e responsáveis no frontend (Prevenindo vazamento de dados visuais)
+  const maskField = (text: string | null | undefined) => {
+    if (!text) return "";
+    if (!privacyMode) return text;
+    const trimmed = text.trim();
+    if (trimmed.length === 0) return "";
+    const parts = trimmed.split(/\s+/);
+    return parts.map((p, i) => {
+      if (p.length === 0) return "";
+      if (i === 0) {
+        if (p.length <= 2) return p + "•";
+        return p.slice(0, 2) + "•••" + p.slice(-1);
+      }
+      return p[0] + "•••";
+    }).join(" ");
+  };
+
+  useEffect(() => {
+    localStorage.setItem("conselho_tutelar_privacy_mode", String(privacyMode));
+  }, [privacyMode]);
+
   // Estados para instalação PWA (celular/computador)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [installModalTab, setInstallModalTab] = useState<"celular" | "computador">("celular");
+  const [copiedCommand, setCopiedCommand] = useState(false);
 
   useEffect(() => {
     // Detectar se já está rodando standalone (instalado)
@@ -88,6 +124,8 @@ export default function App() {
       setShowInstallModal(true);
     }
   };
+
+
 
   // Filtros de Prontuário
   const [searchQuery, setSearchQuery] = useState("");
@@ -311,11 +349,16 @@ export default function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center px-4 py-8 relative">
+      <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center px-4 py-8 relative overflow-hidden">
         {/* Subtle background decoration */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-blue-600" />
         
-        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200/80 shadow-2xl overflow-hidden p-8 space-y-6">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.94, y: 40 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 110, damping: 15 }}
+          className="max-w-md w-full bg-white rounded-3xl border border-slate-200/80 shadow-2xl p-8 space-y-6"
+        >
           <div className="flex flex-col items-center text-center space-y-4">
             {/* Logo Centralizada Ampliada e Arredondada */}
             <div className="relative">
@@ -425,7 +468,7 @@ export default function App() {
               <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[9px] font-bold text-slate-600 border border-slate-200">Segurança TLS</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Botão flutuante para instalar o PWA do Conselho direto da tela de login */}
         <button
@@ -470,36 +513,58 @@ export default function App() {
           {/* Navegação de Abas e Perfil de Conselheiro */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 justify-between md:justify-end">
             <nav className="flex items-center p-0.5 bg-slate-100 rounded-lg text-xs font-semibold">
-              <button 
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => { setCurrentTab("casos"); setSelectedCaseId(null); setIsCreating(false); }}
-                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition ${
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
                   currentTab === "casos" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" /> Prontuário
-              </button>
-              <button 
+              </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => { setCurrentTab("dashboard"); setSelectedCaseId(null); setIsCreating(false); }}
-                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition ${
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
                   currentTab === "dashboard" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <LayoutDashboard className="w-3.5 h-3.5" /> Estatísticas e Relatórios
-              </button>
-              <button 
+              </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => { setCurrentTab("backup"); setSelectedCaseId(null); setIsCreating(false); }}
-                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition ${
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
                   currentTab === "backup" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <Database className="w-3.5 h-3.5" /> Backup / Sinc
-              </button>
+              </motion.button>
             </nav>
+
+            {/* Botão de Toggle do Modo de Privacidade LGPD (Vazar Zero) */}
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setPrivacyMode(!privacyMode)}
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold text-xs shadow-xs transition cursor-pointer shrink-0 ${
+                privacyMode 
+                  ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse" 
+                  : "bg-slate-200 hover:bg-slate-300 text-slate-700"
+              }`}
+              title={privacyMode ? "Modo de Privacidade LGPD ATIVADO. Dados pessoais censurados na tela para evitar curiosos." : "Modo de Privacidade DESATIVADO. Clique para censurar e proteger dados pessoais."}
+            >
+              {privacyMode ? <EyeOff className="w-3.5 h-3.5 text-amber-100" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
+              <span>{privacyMode ? "Privacidade Ativa" : "Vazar Zero (LGPD)"}</span>
+            </motion.button>
 
             {/* Botão de Instalação (PWA) para celular e computador */}
             <button 
               onClick={triggerInstallFlow}
-              className="px-3 py-1.5 rounded-lg flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition hover:scale-102 active:scale-98 cursor-pointer shrink-0 animate-bounce"
+              className="px-3 py-1.5 rounded-lg flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition hover:scale-102 active:scale-98 cursor-pointer shrink-0"
               title="Instale o aplicativo Conselho Tutelar no seu celular ou computador para acesso mais rápido"
             >
               <Download className="w-3.5 h-3.5" />
@@ -527,9 +592,18 @@ export default function App() {
       </header>
 
       {/* ÁREA DE CONTEÚDO PRINCIPAL (DIFERENTES TELAS) */}
-      <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1 flex flex-col min-h-0 print:p-0">
-        
-        {/* TAB 1: PRONTUÁRIO DE CASOS (SPLIT-PANE DESIGN) */}
+      <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1 flex flex-col min-h-0 print:p-0" style={{ perspective: 1200 }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentTab}
+            initial={{ rotateY: -15, opacity: 0, transformOrigin: "left center" }}
+            animate={{ rotateY: 0, opacity: 1 }}
+            exit={{ rotateY: 15, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{ backfaceVisibility: "hidden" }}
+            className="w-full flex-1 flex flex-col min-h-0"
+          >
+            {/* TAB 1: PRONTUÁRIO DE CASOS (SPLIT-PANE DESIGN) */}
         {currentTab === "casos" && (
           <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
             
@@ -616,12 +690,14 @@ export default function App() {
                     filteredCases.map(c => {
                       const isActive = c.id === selectedCaseId;
                       return (
-                        <div
+                        <motion.div
                           key={c.id}
                           onClick={() => { setSelectedCaseId(c.id); setIsCreating(false); setEditingCase(null); }}
+                          whileHover={{ scale: 1.015, x: 3 }}
+                          transition={{ type: "spring", stiffness: 350, damping: 22 }}
                           className={`p-4 cursor-pointer text-left transition relative ${
                             isActive 
-                              ? "bg-blue-50/75 border-l-4 border-blue-600" 
+                              ? "bg-blue-50/75 border-l-4 border-blue-600 shadow-xs" 
                               : "hover:bg-slate-50/60 border-l-4 border-transparent"
                           }`}
                         >
@@ -638,9 +714,14 @@ export default function App() {
                             </span>
                           </div>
 
-                          <h3 className="text-xs font-bold text-slate-800 line-clamp-1">{c.criancaNome}</h3>
+                          <h3 className="text-xs font-bold text-slate-800 line-clamp-1 flex items-center gap-1.5">
+                            {maskField(c.criancaNome)}
+                            {privacyMode && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Protegido" />
+                            )}
+                          </h3>
                           <div className="text-[11px] text-slate-500 flex justify-between items-center mt-1">
-                            <span>{c.criancaIdade} anos • {c.responsavelPrincipal.parentesco}: {c.responsavelPrincipal.nome.split(" ")[0]}</span>
+                            <span>{c.criancaIdade} anos • {c.responsavelPrincipal.parentesco}: {maskField(c.responsavelPrincipal.nome.split(" ")[0])}</span>
                           </div>
 
                           <div className="mt-2 text-[11px] text-slate-400 bg-slate-50 p-1.5 rounded-md line-clamp-1 border border-slate-100">
@@ -650,7 +731,7 @@ export default function App() {
                           <div className="text-[9px] text-slate-400 text-right mt-1.5">
                             Modificado em {new Date(c.dataUltimaAtualizacao).toLocaleDateString('pt-BR')}
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })
                   )}
@@ -679,6 +760,7 @@ export default function App() {
                   onDelete={handleDeleteCase}
                   onUpdateStatus={handleUpdateStatus}
                   onAddHistoryLog={handleAddHistoryLog}
+                  privacyMode={privacyMode}
                 />
               ) : (
                 /* Estado Vazio de Seleção (Apenas Desktop, pois no mobile o Lado A cobre a tela) */
@@ -725,6 +807,8 @@ export default function App() {
             onResetSeed={handleResetSeed}
           />
         )}
+          </motion.div>
+        </AnimatePresence>
 
       </main>
 
@@ -820,19 +904,20 @@ export default function App() {
                 </div>
               ) : (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-3">
+                  {/* Card 1: PWA Native Installation */}
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold flex items-center justify-center">✓</span>
-                      <h4 className="text-xs font-extrabold text-slate-800">No Computador ou Notebook (Windows / MacOS / Linux)</h4>
+                      <h4 className="text-xs font-bold text-slate-800">Instalação PWA Automática e Segura</h4>
                     </div>
                     
-                    <ul className="list-disc pl-8 text-xs text-slate-600 space-y-1.5">
-                      <li>Clique no botão azul <strong>Instalar</strong> no cabeçalho superior deste aplicativo e confirme a instalação na janela popup que abrir.</li>
-                      <li><strong>Alternativa:</strong> Observe a barra de endereços do seu navegador Chrome ou Microsoft Edge (no topo direito). Um ícone de monitor com seta para baixo ou um sinal de mais aparecerá ao lado do botão de favoritar. Clique nele para fixar o programa como um app de desktop nativo.</li>
-                    </ul>
-                    
-                    <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5 text-[10px] text-amber-800 leading-normal">
-                      <strong>Dica Prática:</strong> Uma vez instalado no computador, o Conselho Tutelar de Currais Novos terá seu próprio ícone na Área de Trabalho e iniciará instantaneamente sem que você precise digitar o site no navegador!
+                    <div className="text-xs text-slate-600 pl-2 space-y-2">
+                      <p>Sendo um aplicativo web inteligente, você pode instalá-lo diretamente no Windows, macOS ou Linux de forma totalmente segura, sem nenhum arquivo externo de download:</p>
+                      <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Botão Instalar:</strong> Se disponível, clique no botão azul <strong>Instalar</strong> no cabeçalho superior deste sistema.</li>
+                        <li><strong>Dica Visual do Navegador:</strong> Olhe na barra de endereços (o local onde digita o site) no topo do seu Google Chrome ou Microsoft Edge. À direita, localize o ícone de uma <strong>tela de computador com seta para baixo</strong> ou um sinal de <strong>"+"</strong> e clique nele.</li>
+                        <li><strong>Atalho de Área de Trabalho:</strong> Ao confirmar, o Prontuário criará automaticamente um ícone seguro direto na sua Área de Trabalho e será executado sem as barras de navegação tradicionais, parecendo um programa nativo super rápido!</li>
+                      </ul>
                     </div>
                   </div>
                 </div>

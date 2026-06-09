@@ -23,7 +23,10 @@ import {
   Clock,
   Mail,
   Send,
-  Building
+  Building,
+  Copy,
+  Check,
+  ExternalLink
 } from "lucide-react";
 
 interface CaseDetailsProps {
@@ -33,6 +36,7 @@ interface CaseDetailsProps {
   onDelete: (caseId: string) => void;
   onUpdateStatus: (caseId: string, status: StatusCase) => void;
   onAddHistoryLog: (caseId: string, log: Omit<FollowUpLog, "id">) => void;
+  privacyMode?: boolean;
 }
 
 export default function CaseDetails({
@@ -42,10 +46,28 @@ export default function CaseDetails({
   onDelete,
   onUpdateStatus,
   onAddHistoryLog,
+  privacyMode = false,
 }: CaseDetailsProps) {
   const [newLogDesc, setNewLogDesc] = useState("");
   const [conselheiroNome, setConselheiroNome] = useState(caseData.conselheiroResponsavel || "");
   const [isPrintingPreview, setIsPrintingPreview] = useState(false);
+
+  // Função para mascarar dados quando o modo de privacidade estiver ativo
+  const maskField = (text: string | undefined | null) => {
+    if (!text) return "";
+    if (!privacyMode) return text;
+    const trimmed = text.trim();
+    if (trimmed.length === 0) return "";
+    const parts = trimmed.split(/\s+/);
+    return parts.map((p, i) => {
+      if (p.length === 0) return "";
+      if (i === 0) {
+        if (p.length <= 2) return p + "•";
+        return p.slice(0, 2) + "•••" + p.slice(-1);
+      }
+      return p[0] + "•••";
+    }).join(" ");
+  };
 
   // Estados de Ofício Digital via E-mail
   const [showOficioModal, setShowOficioModal] = useState(false);
@@ -55,6 +77,34 @@ export default function CaseDetails({
   const [oficioTexto, setOficioTexto] = useState("");
   const [isSendingOficio, setIsSendingOficio] = useState(false);
   const [oficioEnviadoSucesso, setOficioEnviadoSucesso] = useState(false);
+
+  // Estados de Cópia de informações
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedAssunto, setCopiedAssunto] = useState(false);
+  const [copiedTexto, setCopiedTexto] = useState(false);
+
+  const handleCopyText = (text: string, setCopiedState: React.Dispatch<React.SetStateAction<boolean>>) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+        setCopiedState(true);
+        setTimeout(() => setCopiedState(false), 2000);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setCopiedState(true);
+        setTimeout(() => setCopiedState(false), 2000);
+      }
+    } catch (err) {
+      console.error("Falha ao copiar: ", err);
+    }
+  };
 
   const ORGAOS_COMPETENTES = [
     { id: "mprn", nome: "Ministério Público de Currais Novos", email: "promotoria.curraisnovos@mprn.mp.br", recomendacao: "Para casos graves de negligência reiterada, abuso, acolhimento institucional urgente ou destituição de tutela." },
@@ -104,7 +154,7 @@ Atenciosamente,
 ___________________________________________________
 Conselheiro(a) Responsável: ${conselheiroNome || caseData.conselheiroResponsavel || 'Membro do Colegiado'}
 CONSELHO TUTELAR DE CURRAIS NOVOS
-Rua do Amparo, Centro, Currais Novos / RN
+R. Juventino da Silveira, 155, Currais Novos - RN, 59380-000
 ct.curraisnovos@rn.gov.br`;
   };
 
@@ -128,22 +178,31 @@ ct.curraisnovos@rn.gov.br`;
 
     setIsSendingOficio(true);
 
-    // 1. Gerar e preencher link de e-mail native mailto
+    // 1. Gerar e preencher link de e-mail native mailto com âncora invisível
     const mailtoSubject = encodeURIComponent(oficioAssunto);
     const mailtoBody = encodeURIComponent(oficioTexto);
     const mailtoUrl = `mailto:${destinatarioEmail.trim()}?subject=${mailtoSubject}&body=${mailtoBody}`;
 
     setTimeout(() => {
-      // Abre o cliente de e-mail do sistema do usuário
-      window.location.href = mailtoUrl;
+      try {
+        const tempLink = document.createElement("a");
+        tempLink.href = mailtoUrl;
+        tempLink.target = "_blank";
+        tempLink.rel = "noopener noreferrer";
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        document.body.removeChild(tempLink);
+      } catch (err) {
+        console.error("Erro ao emitir mailto:", err);
+      }
 
-      // 2. Gravar no prontuário do menor de forma legítima e que este ofício foi gerado e enviado
+      // 2. Gravar no prontuário do menor de forma legítima
       const org = ORGAOS_COMPETENTES.find(o => o.id === selectedOrgao);
       const orgNome = org ? org.nome : "Órgão Externo";
       
       const logPayload = {
         data: new Date().toISOString(),
-        descricao: `📤 OFÍCIO REQUISITÓRIO enviado via e-mail oficial para o órgão [${orgNome}] em (${destinatarioEmail.trim()}).\nAssunto: "${oficioAssunto}"\nO expediente foi preparado para expedição eletrônica direta.`,
+        descricao: `📤 OFÍCIO REQUISITÓRIO enviado para órgão [${orgNome}] (${destinatarioEmail.trim()}).\nAssunto: "${oficioAssunto}"\nO expediente foi expedido e arquivado digitalmente.`,
         conselheiro: conselheiroNome || "Conselheiro logado"
       };
 
@@ -413,8 +472,15 @@ ct.curraisnovos@rn.gov.br`;
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="text-slate-400 block mb-0.5">Nome Completo Completo</span>
-                <span className="font-bold text-slate-800 text-sm">{caseData.criancaNome}</span>
+                <span className="text-slate-400 block mb-0.5">Nome Completo</span>
+                <span className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                  {maskField(caseData.criancaNome)}
+                  {privacyMode && (
+                    <span className="text-[9px] bg-amber-50 text-amber-700 px-1 py-0.5 rounded border border-amber-200/50 font-bold select-none">
+                      🔒 LGPD Protegido
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -432,12 +498,12 @@ ct.curraisnovos@rn.gov.br`;
               <div>
                 <span className="text-slate-400 block mb-0.5">Data de Nascimento</span>
                 <span className="font-semibold text-slate-700">
-                  {caseData.criancaDataNascimento ? new Date(caseData.criancaDataNascimento).toLocaleDateString('pt-BR') : "Não informada"}
+                  {privacyMode ? "••/••/••••" : (caseData.criancaDataNascimento ? new Date(caseData.criancaDataNascimento).toLocaleDateString('pt-BR') : "Não informada")}
                 </span>
               </div>
               <div>
                 <span className="text-slate-400 block mb-0.5">Documentação Civil</span>
-                <span className="font-semibold text-slate-700">{caseData.criancaDocumento || "Sem documento recolhido"}</span>
+                <span className="font-semibold text-slate-700">{maskField(caseData.criancaDocumento) || "Sem documento recolhido"}</span>
               </div>
             </div>
 
@@ -446,7 +512,7 @@ ct.curraisnovos@rn.gov.br`;
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="text-slate-400 block mb-0.5">Endereço de Residência</span>
-                  <span className="font-semibold text-slate-700 leading-normal">{caseData.criancaEndereco || "Endereço não cadastrado"}</span>
+                  <span className="font-semibold text-slate-700 leading-normal">{maskField(caseData.criancaEndereco) || "Endereço não cadastrado"}</span>
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -470,10 +536,10 @@ ct.curraisnovos@rn.gov.br`;
               {/* Resp 1 */}
               <div className="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Responsável Principal</span>
-                <div className="font-bold text-slate-800">{caseData.responsavelPrincipal.nome}</div>
+                <div className="font-bold text-slate-800">{maskField(caseData.responsavelPrincipal.nome)}</div>
                 <div className="grid grid-cols-2 gap-1 mt-1 text-[11px] text-slate-600">
                   <div><strong>Parentesco:</strong> {caseData.responsavelPrincipal.parentesco}</div>
-                  <div><strong>Telefone:</strong> {caseData.responsavelPrincipal.telefone || "Não cadastrado"}</div>
+                  <div><strong>Telefone:</strong> {maskField(caseData.responsavelPrincipal.telefone) || "Não cadastrado"}</div>
                 </div>
                 {caseData.responsavelPrincipal.profissao && (
                   <div className="text-[11px] text-slate-500 mt-1"><strong>Profissão:</strong> {caseData.responsavelPrincipal.profissao}</div>
@@ -484,10 +550,10 @@ ct.curraisnovos@rn.gov.br`;
               {caseData.outroResponsavel ? (
                 <div className="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
                   <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Coresponsável</span>
-                  <div className="font-bold text-slate-800">{caseData.outroResponsavel.nome}</div>
+                  <div className="font-bold text-slate-800">{maskField(caseData.outroResponsavel.nome)}</div>
                   <div className="grid grid-cols-2 gap-1 mt-1 text-[11px] text-slate-600">
                     <div><strong>Parentesco:</strong> {caseData.outroResponsavel.parentesco}</div>
-                    <div><strong>Telefone:</strong> {caseData.outroResponsavel.telefone || "Não cadastrado"}</div>
+                    <div><strong>Telefone:</strong> {maskField(caseData.outroResponsavel.telefone) || "Não cadastrado"}</div>
                   </div>
                   {caseData.outroResponsavel.profissao && (
                     <div className="text-[11px] text-slate-500 mt-1"><strong>Profissão:</strong> {caseData.outroResponsavel.profissao}</div>
@@ -533,7 +599,7 @@ ct.curraisnovos@rn.gov.br`;
                   {caseData.denuncianteSigilo ? (
                     <span className="text-rose-600 font-bold">🔒 Anônima (Sigilo protegido por Lei)</span>
                   ) : (
-                    <span>{caseData.denuncianteNome || "Comunicação de Ofício"} {caseData.denuncianteTelefone && ` - ${caseData.denuncianteTelefone}`}</span>
+                    <span>{maskField(caseData.denuncianteNome) || "Comunicação de Ofício"} {caseData.denuncianteTelefone && ` - ${maskField(caseData.denuncianteTelefone)}`}</span>
                   )}
                 </div>
                 <div>
@@ -699,29 +765,109 @@ ct.curraisnovos@rn.gov.br`;
 
             {/* Modal Body */}
             {oficioEnviadoSucesso ? (
-              <div className="p-8 text-center space-y-4">
+              <div className="p-8 text-center space-y-6">
                 <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-100">
                   <CheckCircle className="w-8 h-8" />
                 </div>
-                <div className="space-y-1 max-w-md mx-auto">
-                  <h4 className="font-black text-slate-800 text-base">Ofício Preparado e Registrado!</h4>
+                <div className="space-y-2 max-w-md mx-auto">
+                  <h4 className="font-black text-slate-800 text-base">Ofício Registrado no Prontuário!</h4>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    O rascunho oficial do seu Ofício foi montado e transferido para o seu programa de correspondências de e-mail (Outlook, Gmail, etc).
-                  </p>
-                  <p className="text-xs text-indigo-600 font-extrabold bg-indigo-50 p-3 rounded-xl border border-indigo-100/30 mt-3">
-                    ✔ Registramos automaticamente um parecer oficial desta ocorrência no histórico de acompanhamento do Prontuário do Menor!
+                    O sistema de envio tentou acionar o seu cliente de e-mail padrão. Caso ele não tenha aberto ou o e-mail não tenha sido enviado devido a limites do seu navegador, use as opções rápidas abaixo para garantir a entrega segura:
                   </p>
                 </div>
-                <div className="pt-4 flex justify-center">
+
+                {/* Copiar Campos Manualmente */}
+                <div className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 text-left space-y-3 max-w-lg mx-auto">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200/80 pb-1.5 flex items-center gap-1.5">
+                    ⚙️ Copiar dados para preencher manualmente:
+                  </p>
+                  
+                  {/* Destinatário */}
+                  <div className="flex items-center justify-between gap-4 text-xs">
+                    <span className="text-slate-600 truncate"><strong>Para (Destinatário):</strong> {destinatarioEmail}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(destinatarioEmail, setCopiedEmail)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 transition-all shrink-0 cursor-pointer ${copiedEmail ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-200 hover:bg-slate-300 text-slate-700"}`}
+                    >
+                      {copiedEmail ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copiedEmail ? "Copiado!" : "Copiar"}
+                    </button>
+                  </div>
+
+                  {/* Assunto */}
+                  <div className="flex items-center justify-between gap-4 text-xs">
+                    <span className="text-slate-600 truncate"><strong>Assunto:</strong> {oficioAssunto}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(oficioAssunto, setCopiedAssunto)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 transition-all shrink-0 cursor-pointer ${copiedAssunto ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-200 hover:bg-slate-300 text-slate-700"}`}
+                    >
+                      {copiedAssunto ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copiedAssunto ? "Copiado!" : "Copiar"}
+                    </button>
+                  </div>
+
+                  {/* Conteúdo Completo */}
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400 font-extrabold max-w-[280px]">Copiar o rascunho completo do ofício</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(oficioTexto, setCopiedTexto)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${copiedTexto ? "bg-emerald-600 text-white" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
+                    >
+                      {copiedTexto ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedTexto ? "Texto Copiado!" : "Copiar Texto do Ofício"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Abrir em Webmails Populares */}
+                <div className="space-y-3 max-w-sm mx-auto">
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    🌐 Abrir rascunho no navegador:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(destinatarioEmail)}&su=${encodeURIComponent(oficioAssunto)}&body=${encodeURIComponent(oficioTexto)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100 rounded-xl text-xs font-bold leading-none flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" /> Gmail Web
+                    </a>
+                    <a
+                      href={`https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(destinatarioEmail)}&subject=${encodeURIComponent(oficioAssunto)}&body=${encodeURIComponent(oficioTexto)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 rounded-xl text-xs font-bold leading-none flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" /> Outlook Web
+                    </a>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      const mailtoSubject = encodeURIComponent(oficioAssunto);
+                      const mailtoBody = encodeURIComponent(oficioTexto);
+                      window.location.href = `mailto:${destinatarioEmail.trim()}?subject=${mailtoSubject}&body=${mailtoBody}`;
+                    }}
+                    type="button"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                  >
+                    Tentar Novamente
+                  </button>
                   <button
                     onClick={() => {
                       setShowOficioModal(false);
                       setOficioEnviadoSucesso(false);
                     }}
                     type="button"
-                    className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer"
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer"
                   >
-                    Fechar Janela de Expedição
+                    Concluído
                   </button>
                 </div>
               </div>
