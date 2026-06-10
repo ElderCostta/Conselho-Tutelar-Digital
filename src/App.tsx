@@ -11,6 +11,7 @@ import Dashboard from "./components/Dashboard";
 import CaseForm from "./components/CaseForm";
 import CaseDetails from "./components/CaseDetails";
 import ExportImport from "./components/ExportImport";
+import OficioTemplates from "./components/OficioTemplates";
 import { 
   Users, 
   Plus, 
@@ -46,7 +47,7 @@ export default function App() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [editingCase, setEditingCase] = useState<AtendimentoCase | null>(null);
-  const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup">("casos");
+  const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup" | "oficios">("casos");
 
   // Estado global para modo de privacidade (Esconder dados confidenciais na tela de terceiros)
   const [privacyMode, setPrivacyMode] = useState<boolean>(() => {
@@ -526,6 +527,16 @@ export default function App() {
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => { setCurrentTab("oficios"); setSelectedCaseId(null); setIsCreating(false); }}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
+                  currentTab === "oficios" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-blue-600" /> OFÍCIO (Documentos)
+              </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => { setCurrentTab("dashboard"); setSelectedCaseId(null); setIsCreating(false); }}
                 className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
                   currentTab === "dashboard" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800"
@@ -805,6 +816,16 @@ export default function App() {
             onImport={handleImportBackup}
             onClearAll={handleClearAll}
             onResetSeed={handleResetSeed}
+          />
+        )}
+
+        {/* TAB 4: MODELOS DE OFÍCIO / NOTIFICAÇÃO / TERMO */}
+        {currentTab === "oficios" && (
+          <OficioTemplates 
+            cases={cases}
+            onBack={() => setCurrentTab("casos")}
+            onAddHistoryLog={handleAddHistoryLog}
+            conselheiroNome={conselheiroProfile}
           />
         )}
           </motion.div>
