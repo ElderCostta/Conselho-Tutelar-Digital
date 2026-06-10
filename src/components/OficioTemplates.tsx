@@ -408,10 +408,17 @@ export default function OficioTemplates({
               </div>
 
               {/* Título Notificação */}
-              <div className="text-center py-1">
-                <h3 className="font-bold text-base sm:text-lg uppercase underline tracking-wider font-serif text-black">
-                  NOTIFICAÇÃO Nº {notifNumero}
-                </h3>
+              <div className="text-center py-1 flex items-center justify-center gap-1">
+                <span className="font-bold text-base sm:text-lg uppercase tracking-wider font-serif text-black shrink-0">
+                  NOTIFICAÇÃO Nº
+                </span>
+                <input
+                  type="text"
+                  value={notifNumero}
+                  onChange={(e) => setNotifNumero(e.target.value)}
+                  className="font-bold text-base sm:text-lg uppercase tracking-wider font-serif text-black bg-transparent border-b border-dashed border-slate-300 hover:border-blue-500 focus:border-blue-600 focus:outline-none w-32 px-1 text-center transition print:border-none print:w-auto print:p-0"
+                  title="Clique para editar o número da notificação"
+                />
               </div>
 
               {/* Informações de Endereço */}

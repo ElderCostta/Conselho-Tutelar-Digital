@@ -200,31 +200,14 @@ ct.curraisnovos@rn.gov.br`;
 
     setIsSendingOficio(true);
 
-    // 1. Gerar e preencher link de e-mail native mailto com âncora invisível
-    const mailtoSubject = encodeURIComponent(oficioAssunto);
-    const mailtoBody = encodeURIComponent(oficioTexto);
-    const mailtoUrl = `mailto:${destinatarioEmail.trim()}?subject=${mailtoSubject}&body=${mailtoBody}`;
-
     setTimeout(() => {
-      try {
-        const tempLink = document.createElement("a");
-        tempLink.href = mailtoUrl;
-        tempLink.target = "_blank";
-        tempLink.rel = "noopener noreferrer";
-        document.body.appendChild(tempLink);
-        tempLink.click();
-        document.body.removeChild(tempLink);
-      } catch (err) {
-        console.error("Erro ao emitir mailto:", err);
-      }
-
-      // 2. Gravar no prontuário do menor de forma legítima
+      // Gravar no prontuário do menor de forma legítima
       const org = ORGAOS_COMPETENTES.find(o => o.id === selectedOrgao);
       const orgNome = org ? org.nome : "Órgão Externo";
       
       const logPayload = {
         data: new Date().toISOString(),
-        descricao: `📤 OFÍCIO REQUISITÓRIO enviado para órgão [${orgNome}] (${destinatarioEmail.trim()}).\nAssunto: "${oficioAssunto}"\nO expediente foi expedido e arquivado digitalmente.`,
+        descricao: `📤 OFÍCIO REQUISITÓRIO elaborado para o órgão [${orgNome}] (${destinatarioEmail.trim()}).\nAssunto: "${oficioAssunto}"\nO expediente foi gerado e registrado no histórico do prontuário digital.`,
         conselheiro: conselheiroNome || "Conselheiro logado"
       };
 
@@ -1210,89 +1193,113 @@ ct.curraisnovos@rn.gov.br`;
 
             {/* Modal Body */}
             {oficioEnviadoSucesso ? (
-              <div className="p-8 text-center space-y-6">
-                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-100">
-                  <CheckCircle className="w-8 h-8" />
-                </div>
-                <div className="space-y-2 max-w-md mx-auto">
-                  <h4 className="font-black text-slate-800 text-base">Ofício Registrado no Prontuário!</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    O sistema de envio tentou acionar o seu cliente de e-mail padrão. Caso ele não tenha aberto ou o e-mail não tenha sido enviado devido a limites do seu navegador, use as opções rápidas abaixo para garantir a entrega segura:
-                  </p>
-                </div>
-
-                {/* Copiar Campos Manualmente */}
-                <div className="bg-slate-50 rounded-2xl border border-slate-200/60 p-4 text-left space-y-3 max-w-lg mx-auto">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200/80 pb-1.5 flex items-center gap-1.5">
-                    ⚙️ Copiar dados para preencher manualmente:
-                  </p>
+              <div className="p-6 md:p-8 space-y-6 max-h-[85vh] overflow-y-auto">
+                <div className="text-center space-y-3">
+                  <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-100 animate-bounce">
+                    <CheckCircle className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-800 text-lg">Ofício Registrado no Prontuário Com Sucesso!</h4>
+                    <span className="text-[10px] text-emerald-700 font-bold tracking-wider uppercase bg-emerald-50 border border-emerald-150 px-2 py-0.5 rounded-md mt-1 inline-block">
+                      ✓ Ação salva no histórico digital
+                    </span>
+                  </div>
                   
-                  {/* Destinatário */}
-                  <div className="flex items-center justify-between gap-4 text-xs">
-                    <span className="text-slate-600 truncate"><strong>Para (Destinatário):</strong> {destinatarioEmail}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyText(destinatarioEmail, setCopiedEmail)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 transition-all shrink-0 cursor-pointer ${copiedEmail ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-200 hover:bg-slate-300 text-slate-700"}`}
-                    >
-                      {copiedEmail ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      {copiedEmail ? "Copiado!" : "Copiar"}
-                    </button>
-                  </div>
-
-                  {/* Assunto */}
-                  <div className="flex items-center justify-between gap-4 text-xs">
-                    <span className="text-slate-600 truncate"><strong>Assunto:</strong> {oficioAssunto}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyText(oficioAssunto, setCopiedAssunto)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 transition-all shrink-0 cursor-pointer ${copiedAssunto ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-200 hover:bg-slate-300 text-slate-700"}`}
-                    >
-                      {copiedAssunto ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      {copiedAssunto ? "Copiado!" : "Copiar"}
-                    </button>
-                  </div>
-
-                  {/* Conteúdo Completo */}
-                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-extrabold max-w-[280px]">Copiar o rascunho completo do ofício</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyText(oficioTexto, setCopiedTexto)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${copiedTexto ? "bg-emerald-600 text-white" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
-                    >
-                      {copiedTexto ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copiedTexto ? "Texto Copiado!" : "Copiar Texto do Ofício"}
-                    </button>
+                  {/* Explicação clara e profissional da simulação / iframe */}
+                  <div className="bg-amber-50/75 border border-amber-200 rounded-2xl p-4 text-left space-y-2 mt-4 max-w-xl mx-auto">
+                    <span className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                      💡 Importante: Como Funciona o Envio no Navegador
+                    </span>
+                    <p className="text-[11px] text-amber-900 leading-relaxed font-medium">
+                      Para manter a <strong>segurança jurídica</strong> e conformidade com a <strong>LGPD</strong>, os ofícios devem ser expedidos da sua própria conta institucional ou pessoal de e-mail (para que fique registrado na sua caixa de enviados). 
+                    </p>
+                    <p className="text-[11px] text-amber-900 leading-relaxed">
+                      Como o aplicativo roda dentro de uma <strong>sandbox de simulação (iframe)</strong>, navegadores modernos bloqueiam popups automáticos em segundo plano. Portanto, <strong>escolha uma das opções garantidas de 1 clique abaixo</strong> para efetivamente transmitir a sua mensagem ao destinatário:
+                    </p>
                   </div>
                 </div>
 
-                {/* Abrir em Webmails Populares */}
-                <div className="space-y-3 max-w-sm mx-auto">
-                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                    🌐 Abrir rascunho no navegador:
+                {/* Seção 1 - Métodos Diretos de 1 Clique (NÃO SÃO BLOQUEADOS) */}
+                <div className="space-y-3 max-w-xl mx-auto">
+                  <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider text-center">
+                    🚀 Envio Imediato de 1 Clique (Recomendado):
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <a
                       href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(destinatarioEmail)}&su=${encodeURIComponent(oficioAssunto)}&body=${encodeURIComponent(oficioTexto)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100 rounded-xl text-xs font-bold leading-none flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      className="px-4 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition hover:-translate-y-0.5 shadow-md shadow-rose-600/10 cursor-pointer"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 shrink-0" /> Gmail Web
+                      <ExternalLink className="w-4 h-4 shrink-0" />
+                      <span>Abrir no Gmail Web</span>
                     </a>
                     <a
                       href={`https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(destinatarioEmail)}&subject=${encodeURIComponent(oficioAssunto)}&body=${encodeURIComponent(oficioTexto)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 rounded-xl text-xs font-bold leading-none flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition hover:-translate-y-0.5 shadow-md shadow-blue-600/10 cursor-pointer"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 shrink-0" /> Outlook Web
+                      <ExternalLink className="w-4 h-4 shrink-0" />
+                      <span>Abrir no Outlook/Hotmail</span>
                     </a>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex justify-center gap-3">
+                {/* Seção 2 - Dados Prontos para Copiar se preferir outro e-mail */}
+                <div className="bg-slate-50 rounded-2xl border border-slate-200/80 p-4 text-left space-y-3.5 max-w-xl mx-auto">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
+                    📋 Copiar dados para preenchimento manual alternativo:
+                  </p>
+                  
+                  {/* Destinatário */}
+                  <div className="flex items-center justify-between gap-4 text-xs">
+                    <div className="truncate min-w-0 flex-1">
+                      <span className="text-slate-400 font-semibold block text-[9px] uppercase">E-mail Destinatário (Para)</span>
+                      <span className="text-slate-700 font-bold select-all truncate">{destinatarioEmail}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(destinatarioEmail, setCopiedEmail)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${copiedEmail ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-200 hover:bg-slate-300 text-slate-700"}`}
+                    >
+                      {copiedEmail ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedEmail ? "Copiado!" : "Copiar E-mail"}
+                    </button>
+                  </div>
+
+                  {/* Assunto */}
+                  <div className="flex items-center justify-between gap-4 text-xs">
+                    <div className="truncate min-w-0 flex-1">
+                      <span className="text-slate-400 font-semibold block text-[9px] uppercase">Assunto do E-mail</span>
+                      <span className="text-slate-700 font-bold select-all truncate">{oficioAssunto}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(oficioAssunto, setCopiedAssunto)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${copiedAssunto ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-200 hover:bg-slate-300 text-slate-700"}`}
+                    >
+                      {copiedAssunto ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedAssunto ? "Copiado!" : "Copiar Assunto"}
+                    </button>
+                  </div>
+
+                  {/* Conteúdo Completo */}
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-extrabold max-w-[280px]">Copiar o texto completo do ofício formal para colar</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(oficioTexto, setCopiedTexto)}
+                      className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${copiedTexto ? "bg-emerald-600 text-white" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
+                    >
+                      {copiedTexto ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copiedTexto ? "Texto do Ofício Copiado!" : "Copiar Corpo do Ofício"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rodapé de Ações do Modal */}
+                <div className="pt-4 border-t border-slate-100 flex flex-wrap justify-between items-center gap-3">
                   <button
                     onClick={() => {
                       const mailtoSubject = encodeURIComponent(oficioAssunto);
@@ -1300,19 +1307,21 @@ ct.curraisnovos@rn.gov.br`;
                       window.location.href = `mailto:${destinatarioEmail.trim()}?subject=${mailtoSubject}&body=${mailtoBody}`;
                     }}
                     type="button"
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                    className="px-3.5 py-2 text-slate-650 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-slate-200/50"
+                    title="Tentará forçar a abertura do seu aplicativo de e-mail do Windows/MacOS local"
                   >
-                    Tentar Novamente
+                    ✉️ Forçar App de E-mail Local (Mailto)
                   </button>
+                  
                   <button
                     onClick={() => {
                       setShowOficioModal(false);
                       setOficioEnviadoSucesso(false);
                     }}
                     type="button"
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer"
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition hover:scale-101 active:scale-99 cursor-pointer"
                   >
-                    Concluído
+                    Finalizar Expedição
                   </button>
                 </div>
               </div>
