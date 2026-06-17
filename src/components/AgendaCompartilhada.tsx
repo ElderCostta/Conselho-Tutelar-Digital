@@ -152,16 +152,53 @@ export default function AgendaCompartilhada({ cases, conselheiroAtivo }: AgendaC
   const [activeTypeFilter, setActiveTypeFilter] = useState<string>("Todos");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Estado de notificações automáticas disparadas recentes (Logs virtuais de e-mail / SMS / WhatsApp)
+  // Interface para alertas em tempo real exibidos diretamente no monitor do conselheiro
+  interface LocalOnScreenAlert {
+    id: string;
+    titulo: string;
+    tipo: AgendaEventType;
+    dataHoraStr: string;
+    local: string;
+    mensagem: string;
+  }
+
+  // Função para sintetizar um som de bipe sutil no navegador (Alerta de Mesa Local)
+  const playNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Ré (D5)
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); // Lá (A5)
+      
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.005, audioCtx.currentTime + 0.3);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.35);
+    } catch (e) {
+      console.log("Áudio bloqueado pelo navegador por regras de interação do usuário.");
+    }
+  };
+
+  // Estado para os alertas flutuantes ativos na tela
+  const [activeOnScreenAlerts, setActiveOnScreenAlerts] = useState<LocalOnScreenAlert[]>([]);
+
+  // Estado de alertas e registros de notificações locais exibidas diretamente no PC do Conselheiro
   const [notifLogs, setNotifLogs] = useState<{
     id: string;
     tempo: string;
-    tipoCanal: "SMS" | "WhatsApp" | "E-mail";
+    tipoCanal: "Tela (Alerta)" | "Guarda Local";
     destinatario: string;
     mensagem: string;
-    status: "Enviado" | "Agendado";
+    status: "Exibido" | "Sincronizado";
   }[]>(() => {
-    const saved = localStorage.getItem("ct_agenda_notif_logs");
+    const saved = localStorage.getItem("ct_agenda_notif_logs_v2");
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -173,18 +210,18 @@ export default function AgendaCompartilhada({ cases, conselheiroAtivo }: AgendaC
       {
         id: "l-1",
         tempo: new Date(Date.now() - 30 * 60 * 1000).toLocaleTimeString("pt-BR"),
-        tipoCanal: "WhatsApp",
-        destinatario: "+55 (84) 99881-2201 (Elder Costa)",
-        mensagem: "Lembrete automático: Seu Plantão Noturno em Currais Novos inicia em 60 min. Favor comparecer à sede.",
-        status: "Enviado"
+        tipoCanal: "Tela (Alerta)",
+        destinatario: "Elder Costa (PC Local)",
+        mensagem: "Lembrete: Seu Plantão Noturno em Currais Novos inicia em 60 min. Alerta carregado no monitor principal.",
+        status: "Exibido"
       },
       {
         id: "l-2",
         tempo: new Date(Date.now() - 10 * 60 * 1000).toLocaleTimeString("pt-BR"),
-        tipoCanal: "SMS",
-        destinatario: "+55 (84) 98711-3004 (Família Silva)",
-        mensagem: "Lembrete de compromisso: Visita domiciliar agendada do Conselho Tutelar em sua residência no dia " + new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString("pt-BR") + ".",
-        status: "Enviado"
+        tipoCanal: "Guarda Local",
+        destinatario: "Navegador Ativo - Sessão",
+        mensagem: "Monitor de eventos em segundo plano calibrado e escutando novas atualizações do colegiado.",
+        status: "Sincronizado"
       }
     ];
   });
@@ -214,96 +251,113 @@ export default function AgendaCompartilhada({ cases, conselheiroAtivo }: AgendaC
   }, [events]);
 
   useEffect(() => {
-    localStorage.setItem("ct_agenda_notif_logs", JSON.stringify(notifLogs));
+    localStorage.setItem("ct_agenda_notif_logs_v2", JSON.stringify(notifLogs));
   }, [notifLogs]);
 
-  // Alerta Virtual: Monitoração automática em tempo real dos lembretes simulados!
+  // Alerta Virtual: Monitoração automática em tempo real dos compromissos na tela do PC ativo!
   useEffect(() => {
     const checkUpcomingLembretes = () => {
       let updatedAny = false;
       const now = new Date();
       const nextLogs = [...notifLogs];
+      const newAlerts: LocalOnScreenAlert[] = [];
+
       const nextEvents = events.map(evt => {
         const evtTime = new Date(evt.dataHora);
         const diffMs = evtTime.getTime() - now.getTime();
         const diffMin = Math.round(diffMs / (60 * 1000));
         
-        // Se faltar menos que a antecedência configurada E o evento estiver agendado E ainda não disparou
+        // Se faltar menos que a antecedência configurada E o evento estiver agendado E ainda não disparou o alerta local
         if (diffMin > 0 && diffMin <= evt.lembreteAntecedencia && !evt.notificacaoDisparada && evt.status === "Agendado") {
           updatedAny = true;
           evt.notificacaoDisparada = true;
 
-          // Disparar canais virtuais de notificação
-          if (evt.enviarLembreteSms) {
-            nextLogs.unshift({
-              id: "gen-sms-" + Math.random().toString(36).substring(2, 7),
-              tempo: new Date().toLocaleTimeString("pt-BR"),
-              tipoCanal: "SMS",
-              destinatario: "Responsáveis Integrados / Conselheiros",
-              mensagem: `ALERTA CT: Lembrete do evento "${evt.titulo}" em breve [Local: ${evt.local}].`,
-              status: "Enviado"
-            });
-          }
-          if (evt.enviarLembreteWhatsapp) {
-            nextLogs.unshift({
-              id: "gen-wa-" + Math.random().toString(36).substring(2, 7),
-              tempo: new Date().toLocaleTimeString("pt-BR"),
-              tipoCanal: "WhatsApp",
-              destinatario: `Contatos do Colegiado (${evt.conselheirosEscalados.join(", ")})`,
-              mensagem: `⚠️ NOTIFICAÇÃO DE EVENTO EM APRESSO: "${evt.titulo}" está agendado para ${new Date(evt.dataHora).toLocaleString("pt-BR")}. Local: ${evt.local}.`,
-              status: "Enviado"
-            });
-          }
-          if (evt.enviarLembreteEmail) {
-            nextLogs.unshift({
-              id: "gen-mail-" + Math.random().toString(36).substring(2, 7),
-              tempo: new Date().toLocaleTimeString("pt-BR"),
-              tipoCanal: "E-mail",
-              destinatario: "colegiado@conselhotutelar-cn.gov.br",
-              mensagem: `Conselho Tutelar Digital - Compromisso Iminente: "${evt.titulo}". Detalhes adicionais compilados no prontuário eletrônico municipal.`,
-              status: "Enviado"
-            });
-          }
+          const dataHoraStr = evtTime.toLocaleString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+
+          // Mensagem direcionada
+          const isAtivoEscalado = evt.conselheirosEscalados.includes(conselheiroAtivo);
+          const msg = isAtivoEscalado
+            ? `Atenção Conselheiro(a) ${conselheiroAtivo}! Você tem um compromisso de tipo "${evt.tipo}" agendado para as ${evtTime.toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})} (antecedência configurada de ${evt.lembreteAntecedencia} min).`
+            : `Compromisso do Colegiado em breve: "${evt.titulo}" às ${evtTime.toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})}.`;
+
+          // Adicionar ao painel de alertas visuais piscantes na tela deste PC instantaneamente!
+          newAlerts.push({
+            id: "localalert-" + Math.random().toString(36).substring(2, 7),
+            titulo: evt.titulo,
+            tipo: evt.tipo,
+            dataHoraStr,
+            local: evt.local,
+            mensagem: msg
+          });
+
+          // Registrar no Histórico de Alertas Exibidos na Tela
+          nextLogs.unshift({
+            id: "gen-local-" + Math.random().toString(36).substring(2, 7),
+            tempo: new Date().toLocaleTimeString("pt-BR"),
+            tipoCanal: "Tela (Alerta)",
+            destinatario: isAtivoEscalado ? `${conselheiroAtivo} (PC Logado)` : "Colegiado (PC Local)",
+            mensagem: `Alerta popup disparado na tela do navegador para o compromisso: "${evt.titulo}".`,
+            status: "Exibido"
+          });
         }
         return evt;
       });
 
       if (updatedAny) {
         setEvents(nextEvents);
-        setNotifLogs(nextLogs.slice(0, 30)); // Máximo 30 logs ativos na tela
+        setNotifLogs(nextLogs.slice(0, 30)); // Máximo de 30 históricos ativos na tela
+        if (newAlerts.length > 0) {
+          playNotificationSound();
+          setActiveOnScreenAlerts(prev => [...newAlerts, ...prev]);
+        }
       }
     };
 
-    const interval = setInterval(checkUpcomingLembretes, 10000); // Checa a cada 10s
+    const interval = setInterval(checkUpcomingLembretes, 8000); // Checa a cada 8s
     return () => clearInterval(interval);
-  }, [events, notifLogs]);
+  }, [events, notifLogs, conselheiroAtivo]);
 
-  // Função para simular o teste manual de envio de notificações
+  // Função para simular o teste manual de exbição de alertas na tela do próprio PC
   const [isSimulating, setIsSimulating] = useState(false);
   const handleTestNotifications = () => {
     setIsSimulating(true);
     setTimeout(() => {
-      const logsAdicionais = [
-        {
-          id: "test-wa-" + Date.now(),
-          tempo: new Date().toLocaleTimeString("pt-BR"),
-          tipoCanal: "WhatsApp" as const,
-          destinatario: "+55 (84) 99881-2201 (Elder Costa)",
-          mensagem: "Sincronização de Notificações ativada! Lembrete enviado p/ todos os agentes de plantão ativo.",
-          status: "Enviado" as const
-        },
-        {
-          id: "test-sms-" + Date.now(),
-          tempo: new Date().toLocaleTimeString("pt-BR"),
-          tipoCanal: "SMS" as const,
-          destinatario: "Prontuários Ativos de Currais Novos",
-          mensagem: "Sistemas de alertas civis automatizados testados e calibrados com sucesso.",
-          status: "Enviado" as const
-        }
-      ];
-      setNotifLogs(prev => [...logsAdicionais, ...prev]);
+      playNotificationSound();
+      
+      // Cria um Alerta Flutuante na tela simulado
+      const testAlert: LocalOnScreenAlert = {
+        id: "test-alert-" + Date.now(),
+        titulo: "🚨 Simulação de Alerta de Plantão Tutelar (Chamado)",
+        tipo: "Plantão",
+        dataHoraStr: new Date(Date.now() + 15 * 60 * 1000).toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        local: "Sede do Conselho Tutelar - Currais Novos/RN",
+        mensagem: `Alerta ativo no PC de ${conselheiroAtivo}. Teste de pop-up e integridade do alto-falante local efetuado com sucesso.`
+      };
+
+      setActiveOnScreenAlerts(prev => [testAlert, ...prev]);
+
+      const logInformacao = {
+        id: "test-log-" + Date.now(),
+        tempo: new Date().toLocaleTimeString("pt-BR"),
+        tipoCanal: "Tela (Alerta)" as const,
+        destinatario: `${conselheiroAtivo} (Neste Monitor)`,
+        mensagem: `Ação manual efetuada. Disparo visual de simulação ativado com altifalantes locais configurados.`,
+        status: "Exibido" as const
+      };
+
+      setNotifLogs(prev => [logInformacao, ...prev]);
       setIsSimulating(false);
-    }, 1500);
+    }, 1200);
   };
 
   // Excluir evento
@@ -733,36 +787,19 @@ export default function AgendaCompartilhada({ cases, conselheiroAtivo }: AgendaC
                   )}
 
                   {/* Alertas de Notificações Ativados */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100/60 text-[11px]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1.5 border-t border-slate-100/60 text-[11px]">
                     <div className="flex items-center gap-2 text-slate-400 font-bold">
-                      <BellRing className="w-3.5 h-3.5 text-blue-500" />
-                      <span>Notificações Automáticas Configuradas:</span>
+                      <BellRing className="w-3.5 h-3.5 text-indigo-500 animate-swing" />
+                      <span>Alerta de Sistema Ativo neste PC:</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase border flex items-center gap-1 ${
-                        evt.enviarLembreteWhatsapp 
-                          ? "bg-slate-50 border-emerald-300 text-emerald-700 font-bold" 
-                          : "bg-slate-50 text-slate-300 border-slate-100"
-                      }`}>
-                        WhatsApp
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase border flex items-center gap-1 ${
-                        evt.enviarLembreteSms 
-                          ? "bg-slate-50 border-blue-300 text-blue-700 font-bold" 
-                          : "bg-slate-50 text-slate-300 border-slate-100"
-                      }`}>
-                        SMS
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase border flex items-center gap-1 ${
-                        evt.enviarLembreteEmail 
-                          ? "bg-slate-50 border-purple-300 text-purple-700 font-bold" 
-                          : "bg-slate-50 text-slate-300 border-slate-100"
-                      }`}>
-                        E-mail
+                      <span className="bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-[9px] uppercase rounded-md px-2 py-0.5 flex items-center gap-1.5 shadow-3xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping inline-block" />
+                        Alerta de Monitor / Pop-up Local
                       </span>
                       
                       <div className="h-4 w-px bg-slate-200 mx-1" />
-                      <span className="text-[10px] text-slate-450 font-semibold font-mono">
+                      <span className="text-[10px] text-slate-500 font-black font-mono">
                         Avisar {evt.lembreteAntecedencia} min antes
                       </span>
                     </div>
@@ -774,59 +811,59 @@ export default function AgendaCompartilhada({ cases, conselheiroAtivo }: AgendaC
         </div>
       </div>
 
-      {/* SEÇÃO DA DIREITA: CENTRAL DE NOTIFICAÇÕES AUTOMÁTICAS E GATEWAY */}
+      {/* SEÇÃO DA DIREITA: CENTRAL DE ALERTAS EM TEMPO REAL NO PC */}
       <div className="w-full xl:w-96 space-y-6 shrink-0 font-sans text-left">
         
-        {/* Painel Status dos Gateways de Mensageria */}
+        {/* Painel Status do Monitor de Alertas no Navegador */}
         <div className="bg-slate-900 border border-slate-850 text-white rounded-2xl p-5 shadow-lg space-y-4 relative overflow-hidden">
           {/* Fundo decorativo neon sutil */}
-          <div className="absolute -top-10 -right-10 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl" />
+          <div className="absolute -top-10 -right-10 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl" />
           
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center border border-emerald-500/30">
-              <BellRing className="w-4.5 h-4.5 text-emerald-400 animate-swing" />
+            <div className="w-9 h-9 bg-indigo-500/20 text-indigo-400 rounded-xl flex items-center justify-center border border-indigo-500/30">
+              <BellRing className="w-4.5 h-4.5 text-indigo-400 animate-swing" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-white">Central de Mensageria Ativa</h3>
-              <span className="text-[9px] text-emerald-400 uppercase font-bold tracking-widest flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-                Drives Locais Integrados
+              <h3 className="font-extrabold text-sm text-white">Central de Alertas no PC</h3>
+              <span className="text-[9px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping inline-block" />
+                Sessão Conectada Localmente
               </span>
             </div>
           </div>
 
           <p className="text-xs text-slate-350 leading-relaxed font-normal">
-            As notificações de plantões, audiências e visitas são disparadas <strong>automaticamente</strong> para conselheiros, familiares e redes de proteção através de gateways locais simulados.
+            Os lembretes de plantões, audiências e visitas são exibidos <strong>diretamente no PC do Conselheiro</strong> por meio de pop-ups sonoros em tempo real, sem intermediação externa de SMS, WhatsApp ou E-mail.
           </p>
 
           <div className="space-y-2 border-t border-slate-800 pt-3">
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400 font-medium flex items-center gap-1.5">
-                <Smartphone className="w-3.5 h-3.5 text-slate-500" />
-                Gateway WhatsApp (API)
+                <Users className="w-3.5 h-3.5 text-slate-500" />
+                Dono do PC: <strong className="text-white">{conselheiroAtivo}</strong>
               </span>
-              <span className="font-bold text-emerald-400 text-[10px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded uppercase">
-                Conectado (Mock)
+              <span className="font-bold text-indigo-400 text-[10px] bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.2 rounded uppercase">
+                Logado
               </span>
             </div>
 
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400 font-medium flex items-center gap-1.5">
-                <Send className="w-3.5 h-3.5 text-slate-500" />
-                Servidor de E-mail (SMTP)
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                Detector de Tempo Real (BG)
               </span>
               <span className="font-bold text-emerald-400 text-[10px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded uppercase">
-                Pronto
+                Monitorando (8s)
               </span>
             </div>
 
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400 font-medium flex items-center gap-1.5">
                 <Bell className="w-3.5 h-3.5 text-slate-500" />
-                Serviço de SMS (Cellular)
+                Áudio e Bipe de Notificação
               </span>
               <span className="font-bold text-emerald-400 text-[10px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded uppercase">
-                Em Execução
+                Integrado
               </span>
             </div>
           </div>
@@ -835,17 +872,17 @@ export default function AgendaCompartilhada({ cases, conselheiroAtivo }: AgendaC
             <button
               onClick={handleTestNotifications}
               disabled={isSimulating}
-              className="w-full py-2.5 bg-blue-650 hover:bg-blue-600 disabled:bg-blue-800 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer select-none border border-blue-500/30"
+              className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-600 disabled:bg-indigo-805 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 transition cursor-pointer select-none border border-indigo-500/30"
             >
               {isSimulating ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Sincronizando Alertas...</span>
+                  <span>Sintetizando Som...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Testar Disparo de Lembretes SMS</span>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                  <span>Testar Alerta & Som de Urgência</span>
                 </>
               )}
             </button>
@@ -1079,47 +1116,27 @@ export default function AgendaCompartilhada({ cases, conselheiroAtivo }: AgendaC
                 {/* Configurações de Notificações Ativas */}
                 <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl space-y-3">
                   <span className="text-[10px] font-black uppercase text-slate-500 tracking-wide block">
-                    Notificações e Lembretes Automáticos:
+                    Configuração de Alertas de Mesa (Neste PC):
                   </span>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={newEvent.enviarLembreteWhatsapp}
-                        onChange={(e) => setNewEvent({ ...newEvent, enviarLembreteWhatsapp: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                      />
-                      <span>WhatsApp (API)</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={newEvent.enviarLembreteSms}
-                        onChange={(e) => setNewEvent({ ...newEvent, enviarLembreteSms: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                      />
-                      <span>SMS Individual</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={newEvent.enviarLembreteEmail}
-                        onChange={(e) => setNewEvent({ ...newEvent, enviarLembreteEmail: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                      />
-                      <span>E-mail Colegiativo</span>
-                    </label>
+                  <div className="bg-white border border-slate-150 p-3 rounded-xl flex items-start gap-2.5">
+                    <BellRing className="w-4 h-4 text-amber-500 shrink-0 mt-0.5 animate-pulse" />
+                    <div>
+                      <p className="text-[11px] font-black text-slate-800 leading-normal">
+                        Alerta de Sistema Ativo (Pop-up + Bipe) 🔔
+                      </p>
+                      <p className="text-[10px] text-slate-450 font-semibold mt-0.5 leading-relaxed">
+                        O monitoramento automático irá disparar um aviso com áudio diretamente na tela de quem estiver logado do colegiado.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-3 pt-2.5 border-t border-slate-200">
+                  <div className="flex items-center gap-3 pt-1">
                     <span className="text-xs text-slate-500 font-bold shrink-0">Disparar lembrete com antecedência de:</span>
                     <select
                       value={newEvent.lembreteAntecedencia}
                       onChange={(e) => setNewEvent({ ...newEvent, lembreteAntecedencia: Number(e.target.value) })}
-                      className="bg-white border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold outline-none cursor-pointer"
+                      className="bg-white border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold outline-none cursor-pointer text-slate-705"
                     >
                       <option value={15}>15 minutos</option>
                       <option value={30}>30 minutos</option>
@@ -1152,6 +1169,69 @@ export default function AgendaCompartilhada({ cases, conselheiroAtivo }: AgendaC
           </div>
         )}
       </AnimatePresence>
+
+      {/* CONTAINER DE ALERTAS FLUTUANTES EM TEMPO REAL NA TELA (TOASTS) */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none print:hidden font-sans">
+        <AnimatePresence>
+          {activeOnScreenAlerts.map((alert) => (
+            <motion.div
+              key={alert.id}
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-slate-900 border border-slate-800 text-white rounded-2xl p-4.5 shadow-2xl pointer-events-auto flex flex-col gap-2 relative overflow-hidden backdrop-blur-md"
+            >
+              {/* Glow de cor de acordo com o tipo do evento */}
+              <div className={`absolute top-0 left-0 w-1.5 h-full ${
+                alert.tipo === "Plantão" ? "bg-blue-500" :
+                alert.tipo === "Audiência" ? "bg-rose-500" :
+                alert.tipo === "Visita Domiciliar" ? "bg-amber-500" :
+                alert.tipo === "Reunião de Rede" ? "bg-indigo-500" :
+                "bg-emerald-500"
+              }`} />
+
+              <div className="flex items-start justify-between gap-2 pl-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <BellRing className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="text-[9px] uppercase font-black tracking-widest text-slate-400 truncate">
+                    Alerta de Compromisso Próximo ⏰
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveOnScreenAlerts(prev => prev.filter(a => a.id !== alert.id))}
+                  className="text-slate-400 hover:text-white transition text-xs font-bold leading-none cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="pl-2 space-y-1 text-left">
+                <h4 className="font-extrabold text-xs sm:text-sm text-white">
+                  {alert.titulo}
+                </h4>
+                <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
+                  {alert.mensagem}
+                </p>
+                <div className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5 pt-1">
+                  <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                  <span className="truncate">{alert.local}</span>
+                </div>
+              </div>
+
+              <div className="pl-2 pt-1.5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setActiveOnScreenAlerts(prev => prev.filter(a => a.id !== alert.id))}
+                  className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 hover:border-amber-400 rounded-lg text-[9px] font-black transition uppercase cursor-pointer"
+                >
+                  Confirmado / Ciente
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
     </div>
   );
