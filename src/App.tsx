@@ -12,6 +12,7 @@ import CaseForm from "./components/CaseForm";
 import CaseDetails from "./components/CaseDetails";
 import ExportImport from "./components/ExportImport";
 import OficioTemplates from "./components/OficioTemplates";
+import AgendaCompartilhada from "./components/AgendaCompartilhada";
 import { 
   Users, 
   Plus, 
@@ -39,7 +40,9 @@ import {
   Copy,
   AlertCircle,
   Terminal,
-  ExternalLink
+  ExternalLink,
+  Scale,
+  Calendar
 } from "lucide-react";
 
 export default function App() {
@@ -47,7 +50,7 @@ export default function App() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [editingCase, setEditingCase] = useState<AtendimentoCase | null>(null);
-  const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup" | "oficios">("casos");
+  const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup" | "oficios" | "agenda">("casos");
 
   // Estado global para modo de privacidade (Esconder dados confidenciais na tela de terceiros)
   const [privacyMode, setPrivacyMode] = useState<boolean>(() => {
@@ -527,6 +530,16 @@ export default function App() {
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => { setCurrentTab("agenda"); setSelectedCaseId(null); setIsCreating(false); }}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
+                  currentTab === "agenda" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800 font-bold"
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 text-emerald-600" /> Agenda Compartilhada 📅
+              </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => { setCurrentTab("oficios"); setSelectedCaseId(null); setIsCreating(false); }}
                 className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
                   currentTab === "oficios" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800"
@@ -828,6 +841,15 @@ export default function App() {
             conselheiroNome={conselheiroProfile}
           />
         )}
+
+        {/* TAB 5: AGENDA COMPARTILHADA DO COLEGIADO */}
+        {currentTab === "agenda" && (
+          <AgendaCompartilhada 
+            cases={cases}
+            conselheiroAtivo={conselheiroProfile}
+          />
+        )}
+
           </motion.div>
         </AnimatePresence>
 

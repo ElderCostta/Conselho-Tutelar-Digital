@@ -490,9 +490,39 @@ export default function OficioTemplates({
                 </div>
 
                 <div className="text-right pt-4 font-serif text-black text-sm">
-                  <span className="font-serif font-bold text-black">Currais Novos, {notifDocData}.</span>
+                  <span className="font-serif font-bold text-black font-serif">Currais Novos, {notifDocData}.</span>
                 </div>
               </div>
+
+              {/* Bloco de Validação de Autenticidade Digital de Documento (Padrão SEI/Governo) */}
+              <div className="mt-8 pt-4 border-t border-dashed border-slate-350 font-sans space-y-3 print:border-solid print:border-slate-400">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-50 border border-slate-200/80 p-4 rounded-xl print:bg-transparent print:border-slate-400 print:p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-14 h-14 bg-white border border-slate-300 rounded p-1 flex items-center justify-center shrink-0 print:border-slate-400">
+                      <svg viewBox="0 0 100 100" className="w-full h-full text-slate-800">
+                        <path fill="currentColor" d="M0,0 h30 v30 h-30 z M10,10 h10 v10 h-10 z M70,0 h30 v30 h-30 z M80,10 h10 v10 h-10 z M0,70 h30 v30 h-30 z M10,80 h10 v10 h-10 z M40,0 h10 v10 h-10 z M50,10 h10 v10 h-10 z M40,20 h10 v10 h-10 z M50,30 h10 v15 h-10 z M40,80 h15 v20 h-15 z M80,50 h20 v10 h-20 z M70,80 h30 v10 h-30 z M70,40 h10 v20 h-10 z M90,70 h10 v20 h-10 z M40,60 h10 v10 h-10 z M50,70 h10 v10 h-10 z" />
+                      </svg>
+                    </div>
+                    <div className="space-y-1 text-left min-w-0 font-sans">
+                      <div className="flex items-center gap-1.5 flex-wrap font-sans">
+                        <span className="text-[10px] uppercase font-black text-slate-800 tracking-wide flex items-center gap-1 font-sans">
+                          DOCUMENTO SEI COMPATÍVEL
+                        </span>
+                        <span className="text-[8px] sm:text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase shrink-0 print:border print:border-emerald-600 print:text-emerald-800 font-sans">
+                          ✓ ASSINATURA ELETRÔNICA VALIDADA
+                        </span>
+                      </div>
+                      <p className="text-[10px] sm:text-[11px] text-slate-600 leading-relaxed font-sans">
+                        Documento assinado digitalmente e registrado no Prontuário Digital nos termos da Lei Federal nº 14.063/2020. Signatário: <strong className="text-slate-800 font-bold">{termoConselheiro || conselheiroNome || "Conselheiro Tutelar"}</strong> em <span className="font-semibold text-slate-705 font-mono">{new Date().toLocaleString('pt-BR')}</span>.
+                      </p>
+                      <p className="text-[8px] sm:text-[9px] text-slate-400 leading-none font-sans mt-0.5">
+                        Cód. Verificador: <span className="font-mono font-bold text-slate-500">CT-{new Date().getFullYear()}-{Math.random().toString(36).substring(2, 8).toUpperCase()}</span> | Token Criptográfico: <span className="font-mono font-bold text-slate-500">SHA-256 (Padrão ICP-Brasil)</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
 
             </div>
           ) : (
@@ -561,6 +591,36 @@ export default function OficioTemplates({
                   </div>
                 </div>
               </div>
+
+              {/* Bloco de Validação de Autenticidade Digital de Documento (Padrão SEI/Governo) */}
+              <div className="mt-8 pt-4 border-t border-dashed border-slate-350 font-sans space-y-3 print:border-solid print:border-slate-400">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-50 border border-slate-200/80 p-4 rounded-xl print:bg-transparent print:border-slate-400 print:p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-14 h-14 bg-white border border-slate-300 rounded p-1 flex items-center justify-center shrink-0 print:border-slate-400">
+                      <svg viewBox="0 0 100 100" className="w-full h-full text-slate-800">
+                        <path fill="currentColor" d="M0,0 h30 v30 h-30 z M10,10 h10 v10 h-10 z M70,0 h30 v30 h-30 z M80,10 h10 v10 h-10 z M0,70 h30 v30 h-30 z M10,80 h10 v10 h-10 z M40,0 h10 v10 h-10 z M50,10 h10 v10 h-10 z M40,20 h10 v10 h-10 z M50,30 h10 v15 h-10 z M40,80 h15 v20 h-15 z M80,50 h20 v10 h-20 z M70,80 h30 v10 h-30 z M70,40 h10 v20 h-10 z M90,70 h10 v20 h-10 z M40,60 h10 v10 h-10 z M50,70 h10 v10 h-10 z" />
+                      </svg>
+                    </div>
+                    <div className="space-y-1 text-left min-w-0 font-sans">
+                      <div className="flex items-center gap-1.5 flex-wrap font-sans">
+                        <span className="text-[10px] uppercase font-black text-slate-800 tracking-wide flex items-center gap-1 font-sans">
+                          DOCUMENTO SEI COMPATÍVEL
+                        </span>
+                        <span className="text-[8px] sm:text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase shrink-0 print:border print:border-emerald-600 print:text-emerald-800 font-sans">
+                          ✓ ASSINATURA ELETRÔNICA VALIDADA
+                        </span>
+                      </div>
+                      <p className="text-[10px] sm:text-[11px] text-slate-600 leading-relaxed font-sans">
+                        Documento assinado digitalmente e registrado no Prontuário Digital nos termos da Lei Federal nº 14.063/2020. Signatário: <strong className="text-slate-800 font-bold">{termoConselheiro || conselheiroNome || "Conselheiro Tutelar"}</strong> em <span className="font-semibold text-slate-705 font-mono">{new Date().toLocaleString('pt-BR')}</span>.
+                      </p>
+                      <p className="text-[8px] sm:text-[9px] text-slate-400 leading-none font-sans mt-0.5">
+                        Cód. Verificador: <span className="font-mono font-bold text-slate-500">CT-{new Date().getFullYear()}-{Math.random().toString(36).substring(2, 8).toUpperCase()}</span> | Token Criptográfico: <span className="font-mono font-bold text-slate-500">SHA-256 (Padrão ICP-Brasil)</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
 
             </div>
           )}

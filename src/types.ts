@@ -97,3 +97,25 @@ export const MEDIDAS_PAIS_129 = [
   "Art. 129, VIII - Perda da guarda (encaminhar ao Ministério Público)",
   "Art. 129, IX - Destituição da tutela (encaminhar ao MP)"
 ];
+
+export type AgendaEventType = "Plantão" | "Audiência" | "Visita Domiciliar" | "Reunião de Rede" | "Reunião do Colegiado";
+
+export interface AgendaEvent {
+  id: string;
+  titulo: string;
+  tipo: AgendaEventType;
+  dataHora: string; // YYYY-MM-DDTHH:mm
+  duracaoMinutes: number;
+  desc: string;
+  local: string;
+  caseId?: string; // ID opcional do prontuário
+  envolvidosCrianca?: string; // Nome ou iniciais da criança envolvida
+  conselheirosEscalados: string[]; // Conselheiros responsáveis
+  status: "Agendado" | "Concluído" | "Cancelado";
+  enviarLembreteEmail: boolean;
+  enviarLembreteSms: boolean;
+  enviarLembreteWhatsapp: boolean;
+  lembreteAntecedencia: number; // Em minutos (ex: 60)
+  notificacaoDisparada?: boolean;
+}
+
