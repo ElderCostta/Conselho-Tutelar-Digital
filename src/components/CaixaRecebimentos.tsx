@@ -645,13 +645,33 @@ export default function CaixaRecebimentos({ cases, conselheiroAtivo, onAddHistor
 
           {/* Notificação de Status de Sincronização API */}
           {apiError && (
-            <div className="p-3 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-extrabold leading-normal">Ambiente Local / Demonstração Ativado para Teste Operacional</p>
-                <p className="text-[10px] font-normal leading-relaxed text-amber-700 mt-0.5">
-                  Como o token de produção do Google Workspace não está inserido (ou está inativo), o sistema entrou no modo simulador off-line. <strong>Você pode ler, emitir recibos formais de leitura, gerar termos e integrar os ofícios aos prontuários normalmente com e-mails reais de demonstração da comarca!</strong>
+            <div className="p-3.5 bg-rose-50 text-rose-900 border border-rose-200 rounded-xl text-xs font-semibold flex items-start gap-2.5 shadow-3xs">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5 animate-bounce" />
+              <div className="space-y-1.5 flex-1">
+                <p className="font-extrabold leading-normal text-rose-800">Falha ou Restrição de Segurança na Integração</p>
+                <div className="text-[10.5px] font-mono bg-rose-100/50 p-2 rounded-lg border border-rose-200/50 text-rose-850 whitespace-pre-wrap leading-relaxed">
+                  {apiError}
+                </div>
+                <p className="text-[10px] font-normal leading-relaxed text-slate-500">
+                  Como o token ou a permissão do Google Workspace falhou, o sistema pode não sincronizar em tempo real dentro do painel atual.
                 </p>
+                {window.self !== window.top && (
+                  <div className="mt-2.5 p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl space-y-2 shadow-3xs">
+                    <p className="font-black text-[10.5px] flex items-center gap-1.5 text-amber-800 uppercase tracking-tight">
+                      ⚠️ Restrição de Painel Integrado (Iframe) Detectada
+                    </p>
+                    <p className="text-[10px] font-medium leading-relaxed text-amber-700">
+                      Navegadores modernos impedem que o popup de login do Google funcione corretamente quando o aplicativo é visualizado dentro de um painel integrado (iframe) em outras páginas.
+                    </p>
+                    <button 
+                      onClick={() => window.open(window.location.href, "_blank")}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10.5px] font-extrabold shadow-3xs transition-all active:scale-97 cursor-pointer"
+                    >
+                      <span>Abrir Sistema em Nova Aba (Modo Cheio)</span>
+                      <span>↗</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
