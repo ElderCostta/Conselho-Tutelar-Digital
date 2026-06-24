@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { AtendimentoCase } from "../types";
+import { googleSignIn, logout as firebaseLogout, initAuth } from "../lib/firebase";
+import { User } from "firebase/auth";
 import { 
   Mail, 
   Inbox, 
@@ -77,13 +79,58 @@ export default function CaixaRecebimentos({ cases, conselheiroAtivo, onAddHistor
   };
 
   // Google OAuth / Gmail API Estados Reais
-  const [googleAccessToken, setGoogleAccessToken] = useState<string>(() => {
-    return localStorage.getItem("google_workspace_gmail_token") || "";
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [googleAccessToken, setGoogleAccessToken] = useState<string>("");
   const [isApiLoading, setIsApiLoading] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string>("");
   const [apiSuccessMsg, setApiSuccessMsg] = useState<string>("");
   const [showConfigHelp, setShowConfigHelp] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      (user, token) => {
+        setCurrentUser(user);
+        setGoogleAccessToken(token);
+      },
+      () => {
+        setCurrentUser(null);
+        setGoogleAccessToken("");
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    setIsApiLoading(true);
+    setApiError("");
+    setApiSuccessMsg("");
+    try {
+      const result = await googleSignIn();
+      if (result) {
+        setCurrentUser(result.user);
+        setGoogleAccessToken(result.accessToken);
+        setApiSuccessMsg(`Autenticado com sucesso como ${result.user.email}!`);
+      }
+    } catch (err: any) {
+      setApiError(err.message || "Falha ao autenticar com o Google.");
+    } finally {
+      setIsApiLoading(false);
+    }
+  };
+
+  const handleGoogleLogout = async () => {
+    setIsApiLoading(true);
+    try {
+      await firebaseLogout();
+      setCurrentUser(null);
+      setGoogleAccessToken("");
+      setApiSuccessMsg("Sessão do Google encerrada com sucesso.");
+    } catch (err: any) {
+      setApiError(err.message || "Erro ao encerrar sessão.");
+    } finally {
+      setIsApiLoading(false);
+    }
+  };
 
   // Estados dos e-mails
   const [emails, setEmails] = useState<OficioEmail[]>(() => {
@@ -120,20 +167,26 @@ export default function CaixaRecebimentos({ cases, conselheiroAtivo, onAddHistor
     localStorage.setItem("ct_caixa_oficios_emails", JSON.stringify(emails));
   }, [emails]);
 
-  useEffect(() => {
-    if (googleAccessToken) {
-      localStorage.setItem("google_workspace_gmail_token", googleAccessToken);
-    } else {
-      localStorage.removeItem("google_workspace_gmail_token");
-    }
-  }, [googleAccessToken]);
-
   // Função para fazer Chamada Real à API do Gmail se o Token existir
   const fetchRealGmailMessages = async () => {
-    if (!googleAccessToken) {
-      setApiError("Você precisa inserir um Token de Acesso válido para conectar ao Gmail real.");
-      return;
+    let activeToken = googleAccessToken;
+    if (!activeToken) {
+      try {
+        const loginRes = await googleSignIn();
+        if (loginRes) {
+          setCurrentUser(loginRes.user);
+          setGoogleAccessToken(loginRes.accessToken);
+          activeToken = loginRes.accessToken;
+        } else {
+          setApiError("Você precisa se autenticar com o Google para conectar ao Gmail real.");
+          return;
+        }
+      } catch (err: any) {
+        setApiError(err.message || "Falha ao se conectar com o Google OAuth.");
+        return;
+      }
     }
+
     setIsApiLoading(true);
     setApiError("");
     setApiSuccessMsg("");
@@ -143,7 +196,7 @@ export default function CaixaRecebimentos({ cases, conselheiroAtivo, onAddHistor
       const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=oficio+OR+ofício+OR+conselho+OR+promotoria&maxResults=8`;
       const response = await fetch(listUrl, {
         headers: {
-          Authorization: `Bearer ${googleAccessToken}`,
+          Authorization: `Bearer ${activeToken}`,
           "Content-Type": "application/json"
         }
       });
@@ -164,7 +217,7 @@ export default function CaixaRecebimentos({ cases, conselheiroAtivo, onAddHistor
       // 2. Buscar detalhes de cada mensagem em paralelo
       const emailDetailPromises = messages.map(async (msg: any) => {
         const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
-          headers: { Authorization: `Bearer ${googleAccessToken}` }
+          headers: { Authorization: `Bearer ${activeToken}` }
         });
         if (!detailRes.ok) return null;
         const detailData = await detailRes.json();
@@ -250,7 +303,7 @@ export default function CaixaRecebimentos({ cases, conselheiroAtivo, onAddHistor
           const uniques = parsedEmails.filter(p => !existingIds.has(p.id));
           return [...uniques, ...prev];
         });
-        setApiSuccessMsg(`Sincronização concluída! Foram importados ${parsedEmails.length} novos ofícios reais diretamente de conselhotutelarcn@gmail.com`);
+        setApiSuccessMsg(`Sincronização concluída! Foram importados ${parsedEmails.length} novos ofícios reais diretamente de ${currentUser?.email || "conselhotutelarcn@gmail.com"}`);
       } else {
         setApiSuccessMsg("Acesso ao Gmail efetuado. Nenhuma mensagem nova com correspondência de Ofícios pendentes.");
       }
@@ -499,12 +552,12 @@ export default function CaixaRecebimentos({ cases, conselheiroAtivo, onAddHistor
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-slate-900 text-white rounded-xl border border-slate-800 shadow-lg space-y-3"
+              className="p-4 bg-slate-900 text-white rounded-xl border border-slate-800 shadow-lg space-y-4"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-amber-400" />
-                  Instruções de Integração de Produção (Google Cloud)
+                  Integração Oficial com Google Workspace (Gmail API)
                 </span>
                 <button 
                   onClick={() => setShowConfigHelp(false)}
@@ -515,43 +568,76 @@ export default function CaixaRecebimentos({ cases, conselheiroAtivo, onAddHistor
               </div>
 
               <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
-                Esta tela está configurada para conectar-se diretamente com a conta de e-mail oficial <strong>conselhotutelarcn@gmail.com</strong> utilizando o Google Workspace SDK com escopo restrito do Gmail (leitura de ofícios e envio de recibos de leitura).
+                Esta integração segura permite que o Conselho Tutelar se conecte diretamente a uma conta oficial do Gmail com a devida permissão. Com os escopos do Gmail habilitados, o sistema pode ler novos ofícios recebidos e enviar recibos eletrônicos de protocolo de forma real e transparente.
               </p>
 
-              <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2.5">
-                <div className="flex items-center gap-1.5">
-                  <Key className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                  <span className="text-[10px] font-black uppercase text-blue-300 tracking-wider">Credenciais Temporárias de Operador (Google OAuth Access Token)</span>
-                </div>
-                <input 
-                  type="password"
-                  placeholder="Insira o Access Token do Google Cloud gerado no console"
-                  value={googleAccessToken}
-                  onChange={(e) => setGoogleAccessToken(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2 rounded-lg text-xs font-mono text-indigo-300 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-                <div className="flex justify-between items-center text-[10px] text-slate-450 font-semibold pt-1">
-                  <span>A senha e o token são salvos localmente na sessão do navegador de forma criptografada.</span>
-                  <a 
-                    href="https://developers.google.com/oauthplayground/" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline flex items-center gap-0.5"
-                  >
-                    OAuth Playground <ExternalLink className="w-2.5 h-2.5 inline" />
-                  </a>
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {currentUser ? (
+                  <div className="flex items-center gap-3">
+                    {currentUser.photoURL ? (
+                      <img 
+                        src={currentUser.photoURL} 
+                        alt="Avatar" 
+                        className="w-10 h-10 rounded-full border border-blue-500 p-0.5 object-cover" 
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-extrabold text-sm uppercase">
+                        {currentUser.email?.charAt(0)}
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">CONEXÃO ATIVA</span>
+                      <span className="text-xs font-bold text-white block">{currentUser.displayName || "Conselheiro"}</span>
+                      <span className="text-[10px] text-blue-300 font-mono block">{currentUser.email}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse shrink-0" />
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">CONEXÃO REQUERIDA</span>
+                      <span className="text-xs font-bold text-slate-300">Nenhuma conta conectada para sincronização em tempo real.</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {currentUser ? (
+                    <button 
+                      onClick={handleGoogleLogout}
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-extrabold transition cursor-pointer"
+                    >
+                      Desconectar Conta
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleGoogleLogin}
+                      className="flex items-center gap-2.5 bg-white hover:bg-slate-100 text-slate-700 px-3.5 py-2 rounded-lg text-xs font-extrabold transition shadow-sm cursor-pointer border border-slate-200"
+                    >
+                      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-4 h-4 shrink-0">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                        <path fill="none" d="M0 0h48v48H0z"></path>
+                      </svg>
+                      <span>Entrar com o Google</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-1">
-                <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-md font-bold uppercase">
-                  Escopo: gmail.readonly
+                <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-md font-bold uppercase">
+                  Escopo Autorizado: gmail.readonly
                 </span>
-                <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-md font-bold uppercase">
-                  Escopo: gmail.send
+                <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-md font-bold uppercase">
+                  Escopo Autorizado: gmail.send
                 </span>
-                <span className="text-[10px] bg-indigo-900 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-md font-bold uppercase">
-                  Modo de Demonstração / Local Ativo (Vila Local)
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-900 px-2.5 py-1 rounded-md font-bold uppercase flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                  Sincronização Segura Ativa (SSL)
                 </span>
               </div>
             </motion.div>
