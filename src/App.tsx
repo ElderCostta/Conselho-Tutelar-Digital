@@ -14,6 +14,8 @@ import ExportImport from "./components/ExportImport";
 import OficioTemplates from "./components/OficioTemplates";
 import AgendaCompartilhada from "./components/AgendaCompartilhada";
 import CaixaRecebimentos from "./components/CaixaRecebimentos";
+// @ts-ignore
+import bannerCriancas from "./assets/images/banner_criancas_1782313336193.jpg";
 import { 
   Users, 
   Plus, 
@@ -625,160 +627,264 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col md:flex-row print:bg-white print:text-black">
       
-      {/* SIDEBAR / BARRA LATERAL (MENU PRINCIPAL) */}
-      <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-150 p-4 md:p-6 flex flex-col shrink-0 md:h-screen md:sticky md:top-0 print:hidden overflow-y-auto">
-        {/* Logo e Título */}
-        <div className="flex items-center gap-3.5 mb-5 md:mb-7">
+      {/* BARRA LATERAL (MENU PRINCIPAL ANIMADO COM CONTROLE DE ACESSO) */}
+      <aside className="w-full md:w-64 lg:w-72 bg-slate-900 text-slate-100 border-b md:border-b-0 md:border-r border-slate-800 p-4 md:p-5 flex flex-col shrink-0 md:h-screen md:sticky md:top-0 print:hidden overflow-y-auto z-30">
+        
+        {/* Logo e Título do Conselho */}
+        <div className="flex items-center gap-3 mb-6 md:mb-8 pb-4 border-b border-slate-800">
           <div className="relative shrink-0">
             <img 
               src="/icon.svg" 
-              className="w-12 h-12 rounded-full border-2 border-blue-100 shadow-sm p-1 object-contain select-none bg-white transition-transform duration-300 hover:scale-105" 
+              className="w-10 h-10 rounded-full border border-blue-500/30 shadow-md p-1 object-contain select-none bg-white transition-transform duration-300 hover:scale-105" 
               alt="Logo" 
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse" title="Sistema Online" />
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full animate-pulse" title="Sistema Online" />
           </div>
           <div>
-            <h1 className="text-sm font-black text-blue-700 tracking-tight leading-none uppercase">Conselho Tutelar</h1>
-            <span className="text-[11px] font-extrabold text-slate-800 tracking-wider block mt-1 leading-none">Currais Novos / RN</span>
-            <span className="text-[8px] font-bold text-slate-400 block mt-0.5 uppercase tracking-wider">Atendimentos ECA</span>
+            <h1 className="text-xs font-black text-blue-450 tracking-wider leading-none uppercase">Conselho Tutelar</h1>
+            <span className="text-[10px] font-extrabold text-slate-300 tracking-wide block mt-1 leading-none">Currais Novos / RN</span>
+            <span className="text-[8px] font-bold text-slate-500 block mt-0.5 uppercase tracking-widest">ECA Digital v3.0</span>
           </div>
         </div>
 
-        {/* Navegação de Abas - Vertical */}
-        <div className="flex-1 flex flex-col gap-1.5">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 px-2">Menu do Sistema</span>
+        {/* Navegação de Abas - Vertical Animada */}
+        <div className="flex-1 flex flex-col gap-1">
+          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 px-3">Menu do Sistema</span>
           
-          <button 
+          <motion.button 
+            whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => { setCurrentTab("casos"); setSelectedCaseId(null); setIsCreating(false); }}
-            className={`w-full px-3 py-2 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition cursor-pointer ${
-              currentTab === "casos" ? "bg-blue-50 text-blue-750" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className={`relative w-full px-3 py-2.5 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition-colors cursor-pointer group ${
+              currentTab === "casos" ? "text-blue-400" : "text-slate-400 hover:text-white"
             }`}
           >
-            <FileText className="w-4 h-4 text-slate-500" />
+            {currentTab === "casos" && (
+              <motion.div 
+                layoutId="activeSidebarPill" 
+                className="absolute inset-0 bg-blue-500/10 border-l-4 border-blue-500 rounded-xl -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              />
+            )}
+            <FileText className={`w-4 h-4 transition-colors ${currentTab === "casos" ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}`} />
             <span>Prontuários</span>
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => { setCurrentTab("agenda"); setSelectedCaseId(null); setIsCreating(false); }}
-            className={`w-full px-3 py-2 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition cursor-pointer ${
-              currentTab === "agenda" ? "bg-emerald-50 text-emerald-750" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className={`relative w-full px-3 py-2.5 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition-colors cursor-pointer group ${
+              currentTab === "agenda" ? "text-emerald-400" : "text-slate-400 hover:text-white"
             }`}
           >
-            <Calendar className="w-4 h-4 text-emerald-600" />
+            {currentTab === "agenda" && (
+              <motion.div 
+                layoutId="activeSidebarPill" 
+                className="absolute inset-0 bg-emerald-500/10 border-l-4 border-emerald-500 rounded-xl -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              />
+            )}
+            <Calendar className={`w-4 h-4 transition-colors ${currentTab === "agenda" ? "text-emerald-400" : "text-slate-500 group-hover:text-slate-300"}`} />
             <span>Agenda Coletiva 📅</span>
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => { setCurrentTab("oficios"); setSelectedCaseId(null); setIsCreating(false); }}
-            className={`w-full px-3 py-2 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition cursor-pointer ${
-              currentTab === "oficios" ? "bg-blue-50 text-blue-750" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className={`relative w-full px-3 py-2.5 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition-colors cursor-pointer group ${
+              currentTab === "oficios" ? "text-blue-400" : "text-slate-400 hover:text-white"
             }`}
           >
-            <FileText className="w-4 h-4 text-blue-600" />
+            {currentTab === "oficios" && (
+              <motion.div 
+                layoutId="activeSidebarPill" 
+                className="absolute inset-0 bg-blue-500/10 border-l-4 border-blue-500 rounded-xl -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              />
+            )}
+            <FileText className={`w-4 h-4 transition-colors ${currentTab === "oficios" ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}`} />
             <span>Documentos Oficiais</span>
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => { setCurrentTab("recebimentos"); setSelectedCaseId(null); setIsCreating(false); }}
-            className={`w-full px-3 py-2 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition cursor-pointer ${
-              currentTab === "recebimentos" ? "bg-red-50 text-red-750 animate-pulse" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className={`relative w-full px-3 py-2.5 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition-colors cursor-pointer group ${
+              currentTab === "recebimentos" ? "text-red-400" : "text-slate-400 hover:text-white"
             }`}
           >
-            <Mail className="w-4 h-4 text-red-650" />
+            {currentTab === "recebimentos" && (
+              <motion.div 
+                layoutId="activeSidebarPill" 
+                className="absolute inset-0 bg-red-500/10 border-l-4 border-red-500 rounded-xl -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              />
+            )}
+            <Mail className={`w-4 h-4 transition-colors ${currentTab === "recebimentos" ? "text-red-400 animate-pulse" : "text-slate-500 group-hover:text-slate-300"}`} />
             <span>Recebimentos Real 📥</span>
-          </button>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => { setCurrentTab("dashboard"); setSelectedCaseId(null); setIsCreating(false); }}
-            className={`w-full px-3 py-2 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition cursor-pointer ${
-              currentTab === "dashboard" ? "bg-indigo-50 text-indigo-755" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className={`relative w-full px-3 py-2.5 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition-colors cursor-pointer group ${
+              currentTab === "dashboard" ? "text-indigo-400" : "text-slate-400 hover:text-white"
             }`}
           >
-            <LayoutDashboard className="w-4 h-4 text-slate-500" />
-            <span>Relatórios / Estatísticas</span>
-          </button>
+            {currentTab === "dashboard" && (
+              <motion.div 
+                layoutId="activeSidebarPill" 
+                className="absolute inset-0 bg-indigo-500/10 border-l-4 border-indigo-500 rounded-xl -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              />
+            )}
+            <LayoutDashboard className={`w-4 h-4 transition-colors ${currentTab === "dashboard" ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"}`} />
+            <span>Estatísticas / KPI</span>
+          </motion.button>
 
-          <button 
+          <motion.button 
+            whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => { setCurrentTab("backup"); setSelectedCaseId(null); setIsCreating(false); }}
-            className={`w-full px-3 py-2 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition cursor-pointer ${
-              currentTab === "backup" ? "bg-slate-100 text-slate-800" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            className={`relative w-full px-3 py-2.5 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition-colors cursor-pointer group ${
+              currentTab === "backup" ? "text-slate-200" : "text-slate-400 hover:text-white"
             }`}
           >
-            <Database className="w-4 h-4 text-slate-500" />
+            {currentTab === "backup" && (
+              <motion.div 
+                layoutId="activeSidebarPill" 
+                className="absolute inset-0 bg-slate-500/10 border-l-4 border-slate-500 rounded-xl -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              />
+            )}
+            <Database className={`w-4 h-4 transition-colors ${currentTab === "backup" ? "text-slate-300" : "text-slate-500 group-hover:text-slate-300"}`} />
             <span>Backup / Sinc</span>
-          </button>
+          </motion.button>
         </div>
 
-        {/* Controles de Utilidade e Perfil do Conselheiro */}
-        <div className="pt-4 border-t border-slate-150 flex flex-col gap-3.5 mt-auto">
-          {/* Botão Vazar Zero (LGPD) */}
+        {/* Rodapé de Utilidades e Perfil Ativo */}
+        <div className="pt-4 border-t border-slate-800 flex flex-col gap-3 mt-auto">
+          
+          {/* Controle LGPD / Vazar Zero */}
           <button 
             onClick={() => setPrivacyMode(!privacyMode)}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between font-extrabold text-xs transition cursor-pointer shadow-3xs ${
+            className={`w-full px-3 py-2.5 rounded-xl flex items-center justify-between font-extrabold text-xs transition-colors cursor-pointer border ${
               privacyMode 
-                ? "bg-amber-500 text-white" 
-                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                ? "bg-amber-600/25 border-amber-500 text-amber-200" 
+                : "bg-slate-800/50 hover:bg-slate-800 border-slate-700/50 text-slate-300"
             }`}
-            title="Censura dados pessoais e nomes na tela"
+            title="Mascarar nomes e dados sensíveis na interface"
           >
             <div className="flex items-center gap-2">
-              {privacyMode ? <EyeOff className="w-3.5 h-3.5 text-white animate-pulse" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
-              <span>{privacyMode ? "Privacidade Ativa" : "Vazar Zero (LGPD)"}</span>
+              {privacyMode ? <EyeOff className="w-3.5 h-3.5 text-amber-300 animate-pulse" /> : <Eye className="w-3.5 h-3.5 text-slate-400" />}
+              <span>Modo LGPD</span>
             </div>
-            <span className="text-[9px] uppercase font-bold opacity-80">{privacyMode ? "SIM" : "NÃO"}</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider">{privacyMode ? "Ativo" : "Off"}</span>
           </button>
 
-          {/* Botão de Instalação (PWA) */}
+          {/* Instalar App (PWA) */}
           <button 
             onClick={triggerInstallFlow}
-            className="w-full px-3 py-2 rounded-xl flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-xs transition hover:scale-102 active:scale-98 cursor-pointer"
-            title="Instale o aplicativo de forma nativa"
+            className="w-full px-3 py-2 rounded-xl flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-transform active:scale-97 cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-white" />
+            <Download className="w-3.5 h-3.5" />
             <span>Instalar Aplicativo</span>
           </button>
 
-          {/* Perfil e Saída */}
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-150 flex items-center justify-between gap-2.5">
+          {/* Card do Perfil do Conselheiro */}
+          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <span className="text-[8px] text-slate-400 block font-bold uppercase tracking-wider">Conselheiro Ativo</span>
-              <span className="font-extrabold text-blue-900 text-xs block truncate">{conselheiroProfile}</span>
+              <span className="text-[7px] text-slate-500 block font-black uppercase tracking-widest">Conselheiro</span>
+              <span className="font-extrabold text-white text-xs block truncate" title={conselheiroProfile}>
+                {conselheiroProfile}
+              </span>
             </div>
             <div className="flex gap-1 shrink-0">
               <button 
                 onClick={() => setIsLocked(true)}
-                className="p-1 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer" 
-                title="Bloquear Tela Rapidamente (Proteção Ética)"
+                className="p-1.5 bg-slate-800 text-amber-400 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer" 
+                title="Bloquear Tela"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
               </button>
               <button 
                 onClick={handleLogout}
-                className="p-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer" 
-                title="Sair do Sistema / Trocar de Usuário"
+                className="p-1.5 bg-slate-800 text-rose-400 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer" 
+                title="Sair"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
+
         </div>
       </aside>
 
-      {/* ÁREA DE CONTEÚDO PRINCIPAL (DIFERENTES TELAS) */}
-      <main className="flex-1 w-full p-4 sm:p-6 flex flex-col min-h-0 print:p-0" style={{ perspective: 1200 }}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentTab}
-            initial={{ rotateY: -15, opacity: 0, transformOrigin: "left center" }}
-            animate={{ rotateY: 0, opacity: 1 }}
-            exit={{ rotateY: 15, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            style={{ backfaceVisibility: "hidden" }}
-            className="w-full flex-1 flex flex-col min-h-0"
-          >
+      {/* PAINEL DE CONTEÚDO PRINCIPAL (DIFERENTES TELAS + HEADER DE CRIANÇAS) */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* CABEÇALHO IMERSIVO COM IMAGEM DE CRIANÇAS E DEGRADÊ DE ALTA VISIBILIDADE */}
+        <header className="relative bg-slate-950 text-white py-12 px-6 sm:px-8 shadow-md border-b border-slate-800 print:hidden overflow-hidden shrink-0">
+          
+          {/* Imagem de Fundo (Crianças e Adolescentes) */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src={bannerCriancas} 
+              alt="Crianças e Adolescentes sorrindo e protegidos" 
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-cover opacity-25 select-none pointer-events-none transform scale-102 hover:scale-105 transition-transform duration-[12000ms] ease-out"
+            />
+            {/* Máscara de Degradê Escura para Garantir 100% de Visibilidade dos Textos */}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-blue-950/45" />
+          </div>
+
+          {/* Conteúdo do Cabeçalho por cima da Imagem com Alta Visibilidade */}
+          <div className="relative z-10 max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30 backdrop-blur-xs">
+                  Estatuto da Criança e do Adolescente (ECA)
+                </span>
+                <span className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-xs">
+                  Currais Novos / RN
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3.5xl font-black text-white tracking-tight uppercase leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                Conselho Tutelar
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1.5 drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] max-w-2xl leading-relaxed">
+                Painel unificado de Prontuários ECA, Agenda Coletiva de Compromissos e Recebimentos Automáticos em Tempo Real.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+              <span className="text-[9px] font-black text-blue-400 tracking-wider block">CONEXÃO SEGURA ATIVA</span>
+              <span className="text-[10px] text-slate-400 font-semibold max-w-[200px] leading-tight block">
+                Operando sob as diretrizes do Art. 143 do ECA.
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* ÁREA DE CONTEÚDO PRINCIPAL (DIFERENTES TELAS) */}
+        <main className="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1 flex flex-col min-h-0 print:p-0">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTab}
+              initial={{ rotateY: -15, opacity: 0, transformOrigin: "left center" }}
+              animate={{ rotateY: 0, opacity: 1 }}
+              exit={{ rotateY: 15, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              style={{ backfaceVisibility: "hidden" }}
+              className="w-full flex-1 flex flex-col min-h-0"
+            >
             {/* TAB 1: PRONTUÁRIO DE CASOS (SPLIT-PANE DESIGN) */}
         {currentTab === "casos" && (
           <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
@@ -1051,6 +1157,8 @@ export default function App() {
           <span>Tecnologia de Confiança Local (LGPD Atendida • Prontuário Criptografado offline)</span>
         </div>
       </footer>
+
+      </div>
 
       {/* MODAL DE INSTRUÇÕES DE INSTALAÇÃO PWA */}
       {showInstallModal && (
