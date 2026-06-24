@@ -13,6 +13,7 @@ import CaseDetails from "./components/CaseDetails";
 import ExportImport from "./components/ExportImport";
 import OficioTemplates from "./components/OficioTemplates";
 import AgendaCompartilhada from "./components/AgendaCompartilhada";
+import CaixaRecebimentos from "./components/CaixaRecebimentos";
 import { 
   Users, 
   Plus, 
@@ -42,7 +43,8 @@ import {
   Terminal,
   ExternalLink,
   Scale,
-  Calendar
+  Calendar,
+  Mail
 } from "lucide-react";
 
 export default function App() {
@@ -50,7 +52,7 @@ export default function App() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [editingCase, setEditingCase] = useState<AtendimentoCase | null>(null);
-  const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup" | "oficios" | "agenda">("casos");
+  const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup" | "oficios" | "agenda" | "recebimentos">("casos");
 
   // Estado global para modo de privacidade (Esconder dados confidenciais na tela de terceiros)
   const [privacyMode, setPrivacyMode] = useState<boolean>(() => {
@@ -159,6 +161,43 @@ export default function App() {
     return localStorage.getItem("conselho_tutelar_conselheiro") || "ElderCosta";
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  // Controle de Bloqueio por Inatividade e Bloqueio Manual
+  const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [unlockPassword, setUnlockPassword] = useState<string>("");
+  const [unlockError, setUnlockError] = useState<string>("");
+
+  useEffect(() => {
+    if (!isLoggedIn || isLocked) return;
+
+    let timeoutId: any;
+    const INACTIVITY_TIME = 300000; // 5 minutos de inatividade
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsLocked(true);
+      }, INACTIVITY_TIME);
+    };
+
+    const handleActivity = () => {
+      resetTimer();
+    };
+
+    const events = ["mousedown", "mousemove", "keypress", "scroll", "touchstart"];
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [isLoggedIn, isLocked]);
 
   // Carregar casos iniciais
   useEffect(() => {
@@ -487,6 +526,102 @@ export default function App() {
     );
   }
 
+  if (isLocked) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center px-4 py-8 relative overflow-hidden text-left">
+        {/* Repeating Watermark Background */}
+        <div className="absolute inset-0 opacity-[0.025] pointer-events-none select-none flex flex-wrap gap-12 p-8 overflow-hidden">
+          {Array.from({ length: 40 }).map((_, i) => (
+            <div key={i} className="text-white text-[10px] font-mono font-bold tracking-widest rotate-12 uppercase shrink-0">
+              CONSELHO TUTELAR CURRAIS NOVOS • CONFIDENCIAL • ECA ART. 143
+            </div>
+          ))}
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-slate-800/90 backdrop-blur-md rounded-3xl border border-slate-700/50 shadow-2xl p-8 space-y-6 relative z-10 text-white"
+        >
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-20 h-20 rounded-full bg-amber-500/10 border-2 border-amber-500 flex items-center justify-center text-amber-500 animate-pulse">
+              <ShieldAlert className="w-10 h-10" />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black text-amber-400 tracking-tight uppercase leading-none">Tela Bloqueada por Inatividade</h2>
+              <p className="text-[11px] text-slate-300 font-bold block mt-2.5 uppercase">
+                Operador Responsável: <span className="text-white font-extrabold">{conselheiroProfile}</span>
+              </p>
+              <span className="text-[10px] uppercase tracking-wide text-slate-400 block mt-1 leading-normal">
+                Para evitar vazamento de dados confidenciais, a tela foi protegida. Insira sua senha para continuar o trabalho.
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (unlockPassword === SENHA_PADRAO) {
+              setIsLocked(false);
+              setUnlockPassword("");
+              setUnlockError("");
+            } else {
+              setUnlockError("Senha incorreta! Use a senha padrão para desbloquear.");
+            }
+          }} className="space-y-4">
+            {unlockError && (
+              <div className="p-3 bg-red-950/50 text-red-200 rounded-xl border border-red-800/50 text-xs font-semibold text-center">
+                {unlockError}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Senha do Conselheiro</label>
+              <input
+                type="password"
+                required
+                autoFocus
+                placeholder="Insira sua senha de acesso"
+                value={unlockPassword}
+                onChange={(e) => setUnlockPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-xs font-bold text-white outline-none transition"
+              />
+              <span className="text-[10px] text-slate-500 font-medium block mt-1">
+                Dica: a senha padrão é <span className="font-bold text-blue-400">@CTdireitos</span>
+              </span>
+            </div>
+
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  handleLogout();
+                  setIsLocked(false);
+                  setUnlockPassword("");
+                  setUnlockError("");
+                }}
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Trocar Usuário
+              </button>
+
+              <button
+                type="submit"
+                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition cursor-pointer"
+              >
+                Desbloquear
+              </button>
+            </div>
+          </form>
+
+          <p className="text-center text-[9px] text-slate-500 leading-normal font-mono uppercase">
+            Art. 143 do ECA: É vedada a divulgação de atos judiciais, policiais e administrativos relativos a crianças e adolescentes.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col print:bg-white print:text-black">
       
@@ -550,6 +685,16 @@ export default function App() {
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => { setCurrentTab("recebimentos"); setSelectedCaseId(null); setIsCreating(false); }}
+                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
+                  currentTab === "recebimentos" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800 font-bold"
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5 text-red-600" /> Caixa de Recebimentos 📥
+              </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => { setCurrentTab("dashboard"); setSelectedCaseId(null); setIsCreating(false); }}
                 className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition cursor-pointer ${
                   currentTab === "dashboard" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-800"
@@ -601,6 +746,13 @@ export default function App() {
                 <span className="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Conselheiro(a) Ativo(a)</span>
                 <span className="font-extrabold text-blue-900 block">{conselheiroProfile}</span>
               </div>
+              <button 
+                onClick={() => setIsLocked(true)}
+                className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center" 
+                title="Bloquear Tela Rapidamente (Proteção Ética)"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
+              </button>
               <button 
                 onClick={handleLogout}
                 className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center" 
@@ -847,6 +999,43 @@ export default function App() {
           <AgendaCompartilhada 
             cases={cases}
             conselheiroAtivo={conselheiroProfile}
+          />
+        )}
+
+        {/* TAB 6: CAIXA DE RECEBIMENTOS DO GMAIL */}
+        {currentTab === "recebimentos" && (
+          <CaixaRecebimentos 
+            cases={cases}
+            conselheiroAtivo={conselheiroProfile}
+            onAddHistoryLog={handleAddHistoryLog}
+            onImportCase={(newCase) => {
+              const randomId = "case-" + Date.now();
+              const currentYear = new Date().getFullYear();
+              const serialNumber = String(cases.length + 1).padStart(4, "0");
+              const recordNumber = `CT-${currentYear}-${serialNumber}`;
+              
+              const fullCase = {
+                ...newCase,
+                id: randomId,
+                numeroRegistro: recordNumber,
+                dataUltimaAtualizacao: new Date().toISOString(),
+                historico: [
+                  {
+                    id: `log-${Date.now()}-init`,
+                    data: new Date().toISOString(),
+                    descricao: `Abertura de prontuário via Ofício Importado da Caixa de Recebimentos por(a) conselheiro(a) ${conselheiroProfile}.`,
+                    conselheiro: conselheiroProfile
+                  }
+                ]
+              };
+              
+              const updated = [fullCase, ...cases];
+              saveCasesToStorage(updated);
+              setSelectedCaseId(randomId);
+              setCurrentTab("casos");
+            }}
+            privacyMode={privacyMode}
+            maskField={maskField}
           />
         )}
 
