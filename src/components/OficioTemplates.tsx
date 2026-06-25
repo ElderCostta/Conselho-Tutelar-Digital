@@ -588,10 +588,10 @@ export default function OficioTemplates({
               
               {/* Logotipo Superior e Cabeçalho */}
               <div className="text-center space-y-1.5 pb-4 border-b-2 border-black text-black">
-                <div className="flex justify-center mb-1">
+                <div className="flex justify-center mb-2">
                   <img 
                     src="/icon.svg" 
-                    className="w-12 h-12 rounded-full object-contain bg-white p-0.5" 
+                    className="w-24 h-24 rounded-full object-contain bg-white p-1 shadow-xs" 
                     alt="CT Logo" 
                   />
                 </div>
@@ -765,14 +765,15 @@ export default function OficioTemplates({
                 </div>
 
                 <div className="border-t border-dashed border-black/30 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-8 text-center font-serif">
-                  <div className="flex flex-col items-center">
-                    <div className="border-b border-black w-64 mb-1" />
+                  <div className="flex flex-col items-center justify-end">
+                    <div className="border-b border-black w-64 mb-6 h-6" />
                     <span className="text-[11px] font-bold uppercase text-slate-500">Assinatura do notificado(A)</span>
                     <span className="text-[10px] text-slate-400">CPF/RG</span>
                   </div>
-                  <div className="flex flex-col items-center">
-                    <div className="border-b border-black w-64 mb-1 font-bold text-black text-center">Conselho Tutelar</div>
-                    <span className="text-[11px] font-bold uppercase text-slate-500">Assinatura do Notificador (A)</span>
+                  <div className="flex flex-col items-center justify-end">
+                    <div className="border-b border-black w-64 mb-6 h-6" />
+                    <span className="text-[11px] font-bold uppercase text-slate-600">Conselho Tutelar</span>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase">Assinatura do Notificador (A)</span>
                   </div>
                 </div>
               </div>
@@ -801,6 +802,13 @@ export default function OficioTemplates({
               
               {/* Cabeçalho de Termo de Declaração */}
               <div className="text-center space-y-1.5 pb-4 border-b-2 border-black font-serif text-black">
+                <div className="flex justify-center mb-2">
+                  <img 
+                    src="/icon.svg" 
+                    className="w-24 h-24 rounded-full object-contain bg-white p-1 shadow-xs" 
+                    alt="CT Logo" 
+                  />
+                </div>
                 <h2 className="font-extrabold text-sm sm:text-base tracking-wide uppercase leading-tight font-serif text-black">
                   CONSELHO TUTELAR DOS DIREITOS DA CRIANÇA E DO ADOLESCENTE
                 </h2>
@@ -858,17 +866,13 @@ export default function OficioTemplates({
               <div className="pt-8 space-y-14 text-xs sm:text-[13px] font-serif text-black">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 text-center font-serif">
                   <div className="flex flex-col items-center justify-end">
-                    <div className="border-b border-black w-64 mb-1" />
+                    <div className="border-b border-black w-64 mb-6 h-6" />
                     <span className="text-[11px] font-bold uppercase text-slate-500">Declarante</span>
                   </div>
                   <div className="flex flex-col items-center justify-end">
-                    <input
-                      type="text"
-                      value={termoConselheiroAssinatura}
-                      onChange={(e) => setTermoConselheiroAssinatura(e.target.value)}
-                      className="font-bold text-center font-serif text-black text-xs sm:text-[13px] border-b border-dashed border-black/40 hover:border-blue-500 focus:border-blue-600 focus:outline-none w-52 pb-1 bg-slate-50/10 print:border-none print:bg-transparent print:p-0"
-                    />
-                    <span className="text-[11px] font-bold uppercase text-slate-500 mt-1">Conselho tutelar</span>
+                    <div className="border-b border-black w-64 mb-6 h-6" />
+                    <span className="text-[11px] font-bold uppercase text-slate-600">Conselho Tutelar</span>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">Assinatura do Conselheiro</span>
                   </div>
                 </div>
 
