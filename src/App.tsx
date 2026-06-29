@@ -14,6 +14,7 @@ import ExportImport from "./components/ExportImport";
 import OficioTemplates from "./components/OficioTemplates";
 import AgendaCompartilhada from "./components/AgendaCompartilhada";
 import CaixaRecebimentos from "./components/CaixaRecebimentos";
+import NregTemplate from "./components/NregTemplate";
 // @ts-ignore
 import bannerCriancas from "./assets/images/banner_criancas_1782313336193.jpg";
 import { 
@@ -54,7 +55,7 @@ export default function App() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [editingCase, setEditingCase] = useState<AtendimentoCase | null>(null);
-  const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup" | "oficios" | "agenda" | "recebimentos">("casos");
+  const [currentTab, setCurrentTab] = useState<"casos" | "dashboard" | "backup" | "oficios" | "agenda" | "recebimentos" | "nreg">("casos");
 
   // Estado global para modo de privacidade (Esconder dados confidenciais na tela de terceiros)
   const [privacyMode, setPrivacyMode] = useState<boolean>(() => {
@@ -676,6 +677,25 @@ export default function App() {
           <motion.button 
             whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
             whileTap={{ scale: 0.98 }}
+            onClick={() => { setCurrentTab("nreg"); setSelectedCaseId(null); setIsCreating(false); }}
+            className={`relative w-full px-3 py-2.5 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition-colors cursor-pointer group ${
+              currentTab === "nreg" ? "text-amber-400" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            {currentTab === "nreg" && (
+              <motion.div 
+                layoutId="activeSidebarPill" 
+                className="absolute inset-0 bg-amber-500/10 border-l-4 border-amber-500 rounded-xl -z-10"
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              />
+            )}
+            <FileText className={`w-4 h-4 transition-colors ${currentTab === "nreg" ? "text-amber-400" : "text-slate-500 group-hover:text-slate-300"}`} />
+            <span>Ficha NREG 📑</span>
+          </motion.button>
+
+          <motion.button 
+            whileHover={{ x: 4, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => { setCurrentTab("agenda"); setSelectedCaseId(null); setIsCreating(false); }}
             className={`relative w-full px-3 py-2.5 rounded-xl flex items-center gap-3 text-[11px] font-extrabold transition-colors cursor-pointer group ${
               currentTab === "agenda" ? "text-emerald-400" : "text-slate-400 hover:text-white"
@@ -1142,6 +1162,15 @@ export default function App() {
             }}
             privacyMode={privacyMode}
             maskField={maskField}
+          />
+        )}
+
+        {/* TAB 7: REGISTRO NREG AUTOMÁTICO */}
+        {currentTab === "nreg" && (
+          <NregTemplate 
+            cases={cases}
+            conselheiroNome={conselheiroProfile}
+            onBack={() => setCurrentTab("casos")}
           />
         )}
 
