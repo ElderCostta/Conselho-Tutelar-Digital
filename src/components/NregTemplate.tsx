@@ -21,6 +21,9 @@ interface NregTemplateProps {
 interface NregData {
   nreg: string;
   ncad: string;
+  criancaNome: string;
+  criancaEndereco: string;
+  criancaBairro: string;
   corpo: string;
   aberturaDia: string;
   aberturaMes: string;
@@ -34,6 +37,9 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
   // Estado para armazenar dados NREG editáveis
   const [nreg, setNreg] = useState("");
   const [ncad, setNcad] = useState("");
+  const [criancaNome, setCriancaNome] = useState("");
+  const [criancaEndereco, setCriancaEndereco] = useState("");
+  const [criancaBairro, setCriancaBairro] = useState("");
   const [corpo, setCorpo] = useState("");
   const [aberturaDia, setAberturaDia] = useState("");
   const [aberturaMes, setAberturaMes] = useState("");
@@ -91,6 +97,9 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
       const data = savedMap[caseId];
       setNreg(data.nreg || "");
       setNcad(data.ncad || "");
+      setCriancaNome(data.criancaNome || "");
+      setCriancaEndereco(data.criancaEndereco || "");
+      setCriancaBairro(data.criancaBairro || "");
       setCorpo(data.corpo || "");
       setAberturaDia(data.aberturaDia || "");
       setAberturaMes(data.aberturaMes || "");
@@ -103,6 +112,26 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
       setNreg(`${serialPart}/${yearPart}`);
       setNcad(`CAD-${serialPart}`);
       
+      // Separar rua e bairro se estiver em formato brasileiro comum
+      let street = activeCase.criancaEndereco || "";
+      let neighborhood = "";
+      if (street.includes("-")) {
+        const parts = street.split("-");
+        neighborhood = parts.pop()?.trim() || "";
+        street = parts.join("-").trim();
+      } else if (street.includes(",")) {
+        const parts = street.split(",");
+        const lastPart = parts[parts.length - 1].trim();
+        if (lastPart.toLowerCase().includes("bairro") || lastPart.length < 20) {
+          neighborhood = lastPart.replace(/bairro:?/gi, "").trim();
+          street = parts.slice(0, parts.length - 1).join(",").trim();
+        }
+      }
+
+      setCriancaNome(activeCase.criancaNome || "");
+      setCriancaEndereco(street);
+      setCriancaBairro(neighborhood || "Centro");
+      
       // Data de Abertura
       const dateObj = new Date(activeCase.dataHora);
       setAberturaDia(String(dateObj.getDate()));
@@ -113,39 +142,8 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
       setAberturaMes(`${mesesExtenso[dateObj.getMonth()]} de ${dateObj.getFullYear()}`);
       setAberturaCidade("Currais Novos-RN");
 
-      // Gerar corpo do texto lindamente estruturado do NREG
-      const formattedDate = new Date(activeCase.dataHora).toLocaleDateString("pt-BR");
-      const formattedTime = new Date(activeCase.dataHora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-      
-      let relatoAutomatico = `Aos ${formattedDate} às ${formattedTime} horas, perante este Conselho Tutelar do Município de Currais Novos-RN, registrou-se o caso da criança/adolescente ${activeCase.criancaNome}, com idade de ${activeCase.criancaIdade} anos, nascido(a) em ${new Date(activeCase.criancaDataNascimento).toLocaleDateString("pt-BR")}, portador(a) de ${activeCase.criancaDocumento || "certidão de nascimento"}, residente em ${activeCase.criancaEndereco}.\n\n`;
-      
-      relatoAutomatico += `A situação foi levada a este Órgão por intermédio de denúncia referente a: ${activeCase.tipoOcorrencia}.\n\n`;
-      
-      relatoAutomatico += `FATOS CONSTATADOS:\n${activeCase.descricaoOcorrencia}\n\n`;
-      
-      if (activeCase.medidasCrianca.length > 0 || activeCase.medidasPais.length > 0 || activeCase.outrasProvidencias) {
-        relatoAutomatico += `MEDIDAS E PROVIDÊNCIAS ADOTADAS PELO COLEGIADO:\n`;
-        if (activeCase.medidasCrianca.length > 0) {
-          relatoAutomatico += `- Medidas de Proteção Aplicadas à Criança/Adolescente:\n`;
-          activeCase.medidasCrianca.forEach(m => {
-            relatoAutomatico += `  * ${m}\n`;
-          });
-        }
-        if (activeCase.medidasPais.length > 0) {
-          relatoAutomatico += `- Medidas Aplicadas aos Pais ou Responsável:\n`;
-          activeCase.medidasPais.forEach(m => {
-            relatoAutomatico += `  * ${m}\n`;
-          });
-        }
-        if (activeCase.outrasProvidencias) {
-          relatoAutomatico += `- Outras Providências:\n  ${activeCase.outrasProvidencias}\n`;
-        }
-        relatoAutomatico += `\n`;
-      }
-      
-      relatoAutomatico += `E, para constar, lavrou-se este Termo de Registro e Abertura de NREG, que serve como salvaguarda dos fatos apurados e providências adotadas pelo Conselho Tutelar para a proteção integral garantida pelo ECA.`;
-
-      setCorpo(relatoAutomatico);
+      // O usuário solicitou que o corpo começasse em branco para livre preenchimento manual
+      setCorpo("");
     }
   }, [selectedCaseId, activeCase]);
 
@@ -169,6 +167,9 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
     savedMap[activeCase.id] = {
       nreg,
       ncad,
+      criancaNome,
+      criancaEndereco,
+      criancaBairro,
       corpo,
       aberturaDia,
       aberturaMes,
@@ -352,6 +353,39 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
                   />
                 </div>
 
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Crianças/Adolescentes</label>
+                  <input
+                    type="text"
+                    value={criancaNome}
+                    onChange={(e) => setCriancaNome(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none font-bold"
+                    placeholder="Nome da criança"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço</label>
+                  <input
+                    type="text"
+                    value={criancaEndereco}
+                    onChange={(e) => setCriancaEndereco(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none font-bold"
+                    placeholder="Rua, número"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label>
+                  <input
+                    type="text"
+                    value={criancaBairro}
+                    onChange={(e) => setCriancaBairro(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none font-bold"
+                    placeholder="Bairro"
+                  />
+                </div>
+
                 <div className="grid grid-cols-3 gap-2">
                   <div className="col-span-1">
                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Abertura Dia</label>
@@ -389,10 +423,15 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
         </div>
 
         {/* PRÉ-VISUALIZAÇÃO FISICA DO DOCUMENTO A4 */}
-        <div className="flex-1 flex justify-center">
+        <div className="flex-1 flex justify-center" style={{ perspective: "1500px" }}>
           
           {activeCase ? (
-            <div 
+            <motion.div 
+              key={activeCase.id}
+              initial={{ rotateY: -28, opacity: 0, x: -50, scale: 0.96 }}
+              animate={{ rotateY: 0, opacity: 1, x: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 100, damping: 18 }}
+              style={{ originX: 0, transformStyle: "preserve-3d" }}
               id="nreg-print-sheet"
               className="bg-white border border-slate-200 shadow-xl rounded-2xl w-full max-w-[21cm] p-[2cm] font-serif text-black min-h-[29.7cm] flex flex-col justify-between print:border-none print:shadow-none print:p-0 print:m-0 print:rounded-none relative select-text"
             >
@@ -414,8 +453,8 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
                 </div>
 
                 {/* Campos Principais NREG / NCAD */}
-                <div className="grid grid-cols-2 gap-4 py-3 text-sm sm:text-base font-serif text-black font-bold">
-                  <div className="flex items-center gap-1">
+                <div className="grid grid-cols-2 gap-8 py-1 text-sm sm:text-base font-serif text-black font-bold">
+                  <div className="flex items-center gap-2">
                     <span>NREG:</span>
                     <input 
                       type="text"
@@ -424,7 +463,7 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
                       className="border-b border-black font-serif font-bold text-black focus:outline-none focus:bg-yellow-50/50 flex-1 px-1 py-0.5 print:border-none print:p-0 print:bg-transparent"
                     />
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <span>NCAD:</span>
                     <input 
                       type="text"
@@ -436,7 +475,43 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
                 </div>
 
                 {/* Linha Divisória */}
-                <div className="border-t border-black w-full my-2" />
+                <div className="border-t border-black w-full" />
+
+                {/* Campos de Identificação solicitados */}
+                <div className="space-y-4 py-1 text-xs sm:text-sm font-serif text-black font-bold">
+                  <div className="flex items-center gap-2">
+                    <span>Crianças/Adolescentes:</span>
+                    <input 
+                      type="text"
+                      value={criancaNome}
+                      onChange={(e) => setCriancaNome(e.target.value)}
+                      className="border-b border-black font-serif text-black focus:outline-none focus:bg-yellow-50/50 flex-1 px-1 py-0.5 print:border-none print:p-0 print:bg-transparent"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2 sm:col-span-2">
+                      <span>Endereço:</span>
+                      <input 
+                        type="text"
+                        value={criancaEndereco}
+                        onChange={(e) => setCriancaEndereco(e.target.value)}
+                        className="border-b border-black font-serif text-black focus:outline-none focus:bg-yellow-50/50 flex-1 px-1 py-0.5 print:border-none print:p-0 print:bg-transparent"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>Bairro:</span>
+                      <input 
+                        type="text"
+                        value={criancaBairro}
+                        onChange={(e) => setCriancaBairro(e.target.value)}
+                        className="border-b border-black font-serif text-black focus:outline-none focus:bg-yellow-50/50 flex-1 px-1 py-0.5 print:border-none print:p-0 print:bg-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Linha Divisória */}
+                <div className="border-t border-black w-full" />
 
                 {/* Campo Editável com Linhas de Caderno Físico (Efeito Ruled Paper) */}
                 <div className="relative py-2 select-text font-serif">
@@ -524,7 +599,7 @@ export default function NregTemplate({ cases, conselheiroNome = "Conselho Tutela
 
               </div>
 
-            </div>
+            </motion.div>
           ) : (
             <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-3 h-80 flex flex-col items-center justify-center">
               <FileText className="w-12 h-12 text-slate-300 animate-pulse" />
